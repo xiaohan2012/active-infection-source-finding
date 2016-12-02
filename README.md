@@ -12,5 +12,6 @@ Pagerank is better than BFS. For example, the mean query ratio against cascade s
 
 1. In reality, the stopping criteria is not realistic
 2. Why pagerank approach is better than BFS-approach?
+   - one possibility: PR uses information of uninfected nodes while BFS doesn't. What if BFS also uses this information?
 3. What's the intuition of pagerank?
 
