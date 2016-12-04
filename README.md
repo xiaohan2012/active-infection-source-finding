@@ -21,3 +21,18 @@ The larger the source degree, the larger the cascade size.
 This seems obvious.
 
 Check out `cascade_size_vs_source_infected_neighbors.ipynb`
+
+Why this is useful?
+
+
+
+## Core number vs source's neighbors' infection time mean and standard deviation.
+
+The larger the source core number, the higher the mean and std of its neighbors infection time.
+
+To generalize, any node with high core number has high mean and std.
+
+Why is this useful?
+
+
+Check out `cascade_size_vs_source_infected_neighbors.ipynb`

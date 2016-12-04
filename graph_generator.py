@@ -1,6 +1,7 @@
 import math
 import networkx as nx
 import random
+import numpy as np
 from networkx.generators.classic import empty_graph
 
 
@@ -72,3 +73,7 @@ def kronecker_random_graph(k, P, seed=None, directed=True, n_edges=None):
         G = G.to_undirected()
 
     return G
+
+P_peri = np.array([[0.9, 0.1], [0.1, 0.3]])
+P_heir = np.array([[0.9, 0.1], [0.1, 0.9]])
+P_rand = np.array([[0.5, 0.5], [0.5, 0.5]])
