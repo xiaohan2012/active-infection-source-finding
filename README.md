@@ -15,3 +15,9 @@ Pagerank is better than BFS. For example, the mean query ratio against cascade s
    - one possibility: PR uses information of uninfected nodes while BFS doesn't. What if BFS also uses this information?
 3. What's the intuition of pagerank?
 
+## Cascade size and source degree
+
+The larger the source degree, the larger the cascade size.
+This seems obvious.
+
+Check out `cascade_size_vs_source_infected_neighbors.ipynb`
