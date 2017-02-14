@@ -37,20 +37,66 @@ Why is this useful?
 
 Check out `cascade_size_vs_source_infected_neighbors.ipynb`
 
+# Where are we?
+
+- Performance metric priority:
+  - correctness
+    - able to find the source
+  - number of queries should be minimized
+  - simplicity and applicable to various models
+    - a simple method can be applied to a variety of models
+    - single p
+    - different p one edges
+  - robustness to
+    - different node sampling methods
+  - computation speed
+    - if online fashion (new observations are generated on the fly), then speed is important
+
+# Possible directions:
+
+Bounding the likelihood:
+
+- Can we derive some *lower bound* on the likelihood of on-edge nodes?
+- Can we derive some *upper bound* on the likelihood of off-edge nodes?
+
+Or some mean if the likelihood function is exponentially distributed
+
+Particle filter:
+
+- Can we use it here?
 
 # Problems
 
 - ZeroDivisionError: all mu drops to zero so total is zero
--
+- Why the same input produces different querying strategy?
+- Does the sampling method converge?
+
 
 # Possible improvements:
 
 - consider structure when calculating p_mu, not just p
 - neighbor query order: query node should be close the earlier infected nodes
+- different insitializations on mu
+  - easier but faster way?
+- baseline starts with the node with highest mu?
+  - need to justify the multiplicative weight algorithm.
+- uninfected nodes
+  - nearby nodes decrease mu?
+- another baseline:
+  - iteratively adding new observations
+  - and infer the new source likelihood
 
-# Different settings:
+
+# Different settings
 
 - sampling by:
   - node degree: high degree nodes are more likely to be sampled
   - infection time: later nodes are more likely to be sampled
   - uniform
+
+# Better visualization
+
+- Source node (square or star)
+- Query and response (different colors) with an arrow from query to response
+- Path nodes bigger
+- observed nodes (circle with tick inside it)
