@@ -22,7 +22,7 @@ def baseline_dog_tracker(g, obs_nodes, infection_times):
         if found_source:
             source = q
             expected = min(infection_times, key=lambda n: infection_times[n])
-            print('**Found** source: {}'.format(source))
+            # print('**Found** source: {}'.format(source))
             assert source == expected
             break
     return query_count

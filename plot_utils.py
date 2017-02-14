@@ -24,8 +24,6 @@ def get_display_kwargs(g, infected_times, obs_nodes=set(), max_node_size=1000):
             'cmap': 'OrRd'}
 
 
-# In[6]:
-
 def add_colorbar(cvalues, cmap='OrRd'):
     eps = np.maximum(0.0000000001, np.min(cvalues)/1000.)
     vmin = np.min(cvalues) - eps
@@ -34,3 +32,6 @@ def add_colorbar(cvalues, cmap='OrRd'):
     scm = mpl.cm.ScalarMappable(norm, cmap)
     scm.set_array(cvalues)
     plt.colorbar(scm)    
+
+
+
