@@ -36,3 +36,21 @@ Why is this useful?
 
 
 Check out `cascade_size_vs_source_infected_neighbors.ipynb`
+
+
+# Problems
+
+- ZeroDivisionError: all mu drops to zero so total is zero
+-
+
+# Possible improvements:
+
+- consider structure when calculating p_mu, not just p
+- neighbor query order: query node should be close the earlier infected nodes
+
+# Different settings:
+
+- sampling by:
+  - node degree: high degree nodes are more likely to be sampled
+  - infection time: later nodes are more likely to be sampled
+  - uniform
