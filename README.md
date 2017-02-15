@@ -100,3 +100,16 @@ Particle filter:
 - Query and response (different colors) with an arrow from query to response
 - Path nodes bigger
 - observed nodes (circle with tick inside it)
+
+
+# infection\_time\_distribution
+
+when `p=0.7`
+
+- correlation betweenlength of shortest path and ratio of infected nodes: weakly positive
+- infection time distribution, the shape looks like Poisson distribution
+
+When `p=0.4`
+
+- the correlation is strong
+- Again, the distribution looks like Poission distribution
