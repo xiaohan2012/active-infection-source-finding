@@ -104,6 +104,8 @@ Particle filter:
 
 # infection\_time\_distribution
 
+Note: *uninfected nodes* are excluded from the following analysis.
+
 when `p=0.7`
 
 - correlation betweenlength of shortest path and ratio of infected nodes: weakly positive
@@ -113,3 +115,24 @@ When `p=0.4`
 
 - the correlation is strong
 - Again, the distribution looks like Poission distribution
+
+# Query strategy: select the node with maximum weight
+
+epsilon needs to be large enough (>0.6) to beat the baseline.
+
+When eps = 0.8, the query count is almost half.
+
+However, there are certain cases there it queries almost **every** node. 
+
+The reason is:
+
+Because of the stochasticity, it's possible that some non-source node explains  the cascade better than the actual source.
+Note, the process is random, thus a source might produce a cascade that is unlikely to happen.
+
+To make it more robust, we can combine baseline algorithm with this method. 
+
+# Query selection strategy: source likelihood convergence speed
+
+
+
+
