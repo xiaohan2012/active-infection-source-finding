@@ -136,11 +136,14 @@ To make it more robust, we can combine baseline algorithm with this method.
 
 # Query strategy running time
 
-To query all nodes:
+To query all nodes (grid):
 
 - Random: 1s
 - Min consensus: ~20s
-- 
+
+For Kronecker graph, it is:
+
+- Min consensus: 2min 37s
 
 # Other issues
 

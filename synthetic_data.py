@@ -2,6 +2,7 @@ import numpy as np
 import pickle as pkl
 from collections import defaultdict, Counter
 import networkx as nx
+from networkx.generators.random_graphs import random_powerlaw_tree
 from tqdm import tqdm
 from joblib import Parallel, delayed
 from graph_generator import kronecker_random_graph, grid_2d, \
@@ -12,6 +13,7 @@ KRONECKER_RAND = 'kronecker-rand'
 KRONECKER_PERI = 'kronecker-peri'
 KRONECKER_HIER = 'kronecker-hier'
 GRID = 'grid'
+PL_TREE = 'powerlaw_tree'
 
 COUNTER_FILE_SUFFIX = 'source2nodeid_counter'
 TIMES_FILE_SUFFIX = 'source2times'
@@ -25,17 +27,19 @@ def gen_kronecker(P, k=8, n_edges=512):
 
 
 def load_data_by_gtype(gtype):
-    source2nodeid_counter = pkl.load(open('outputs/{}_{}.pkl'.format(gtype, COUNTER_FILE_SUFFIX), 'rb'))
-    times_by_source = pkl.load(open('outputs/{}_{}.pkl'.format(gtype, TIMES_FILE_SUFFIX), 'rb'))
-    g = nx.read_gpickle('outputs/{}.gpkl'.format(gtype))
+    source2nodeid_counter = pkl.load(open('data/{}/{}.pkl'.format(gtype, COUNTER_FILE_SUFFIX), 'rb'))
+    times_by_source = pkl.load(open('data/{}/{}.pkl'.format(gtype, TIMES_FILE_SUFFIX), 'rb'))
+    g = nx.read_gpickle('data/{}/graph.gpkl'.format(gtype))
     return g, times_by_source, source2nodeid_counter
 
 
-if __name__ == "__main__":    
+if __name__ == "__main__":
+    import os
+    
     p = 0.7
     delta = 1
     
-    gtype = GRID
+    gtype = PL_TREE
 
     if gtype == KRONECKER_HIER:
         g = gen_kronecker(P=P_hier)
@@ -43,15 +47,21 @@ if __name__ == "__main__":
         g = gen_kronecker(P=P_peri)
     elif gtype == KRONECKER_RAND:
         g = gen_kronecker(P=P_rand)
+    elif gtype == PL_TREE:
+        p = 0.88
+        g = random_powerlaw_tree(100, tries=10000)
     elif gtype == GRID:
-        g = grid_2d(100)
+        g = grid_2d(10)
     else:
         raise ValueError('unsupported graph type {}'.format(gtype))
 
+    directory = 'data/{}'.format(gtype)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
     print('graph type: {}'.format(gtype))
     g = add_p_and_delta(g, p, delta)
-    nx.write_gpickle(g, 'outputs/{}.gpkl'.format(gtype))
-
+    nx.write_gpickle(g, 'data/{}/graph.gpkl'.format(gtype))
 
     cascade_number = 250
     print('generating {} cascades'.format(cascade_number))
@@ -66,11 +76,11 @@ if __name__ == "__main__":
         for s, times, _ in stat:
             times_array = np.array([times[n] for n in g.nodes_iter()])
             times_by_source[s].append(times_array)
-            times_by_source = {s: np.array(times2d)
-                               for s, times2d in times_by_source.items()}
+    times_by_source = {s: np.array(times2d)
+                       for s, times2d in times_by_source.items()}
 
     pkl.dump(times_by_source,
-             open('outputs/{}_{}.pkl'.format(gtype, TIMES_FILE_SUFFIX), 'wb'))
+             open('data/{}/{}.pkl'.format(gtype, TIMES_FILE_SUFFIX), 'wb'))
 
     print('generating source2nodeid_counter')
     # This "cache" file is mainly for better running performance
@@ -81,4 +91,4 @@ if __name__ == "__main__":
             source2nodeid_counter[src][i] = Counter(times[:, i])
     
     pkl.dump(source2nodeid_counter,
-             open('outputs/{}_{}.pkl'.format(gtype, COUNTER_FILE_SUFFIX), 'wb'))
+             open('data/{}/{}.pkl'.format(gtype, COUNTER_FILE_SUFFIX), 'wb'))
