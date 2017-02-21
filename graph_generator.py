@@ -5,7 +5,11 @@ import numpy as np
 from networkx.generators.classic import empty_graph
 
 
-def kronecker_random_graph(k, P, seed=None, directed=True, n_edges=None):
+def kronecker_random_graph(k, P, seed=None, directed=False, n_edges=None):
+    """
+    k: number of iterations of the product
+    P: initiator matrix
+    """
     dim = len(P)
     
     errorstring = ("The initiator matrix must be a nonempty" +
@@ -75,5 +79,23 @@ def kronecker_random_graph(k, P, seed=None, directed=True, n_edges=None):
     return G
 
 P_peri = np.array([[0.9, 0.1], [0.1, 0.3]])
-P_heir = np.array([[0.9, 0.1], [0.1, 0.9]])
+P_hier = np.array([[0.9, 0.1], [0.1, 0.9]])
 P_rand = np.array([[0.5, 0.5], [0.5, 0.5]])
+
+
+def grid_2d(n):
+    """
+    n: height and width
+    p: infection proba
+    """
+    return nx.grid_2d_graph(n, n)
+    
+
+def add_p_and_delta(g, p, d):
+    """p: infection proba
+    d: transmission delay
+    """
+    for i, j in g.edges_iter():
+        g[i][j]['p'] = p
+        g[i][j]['d'] = d
+    return g

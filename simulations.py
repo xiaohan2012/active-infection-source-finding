@@ -1,13 +1,12 @@
+import math
 import networkx as nx
 import numpy as np
-import random
-from copy import copy
 
 
 def sample_graph_from_infection(g):
-    g_bone = g.copy()
+    g_bone = g
     g = nx.Graph()
-    g.add_nodes_from(g_bone)
+    g.add_nodes_from(g_bone.nodes())
     
     # sample active edges
     rands = np.random.random(g_bone.number_of_edges())
@@ -21,7 +20,7 @@ def sample_graph_from_infection(g):
     for i, j in g.edges_iter():
         g[i][j]['tried'] = False
         g[i][j]['d'] = g_bone[i][j]['d']
-        g[i][j]['p'] = g_bone[i][j]['p']        
+        g[i][j]['p'] = g_bone[i][j]['p']
         
     return g
 
@@ -46,12 +45,12 @@ def simulate_IC(g, s=None, is_g_sampled=False, debug=False):
     if debug:
         print(g.edges())
     if s is None:
-        s = random.choice(g.nodes())
+        idx = np.arange(g.number_of_nodes())
+        s = g.nodes()[np.random.choice(idx)]
         
     queue = [s]
     t = 0
     infection_time[s] = t
-    infection_paths = []
     while len(queue) > 0:
         outbreak_nodes = [u for u in queue if infection_time[u] <= t]
         queue = list(set(queue) - set(outbreak_nodes))
@@ -62,7 +61,7 @@ def simulate_IC(g, s=None, is_g_sampled=False, debug=False):
             for v in g.neighbors(u):
                 if not g[u][v]['tried']:
                     if debug:
-                        print('{} infects {}'.format(u, v))                    
+                        print('{} infects {}'.format(u, v))
                     g[u][v]['tried'] = True
                     if np.isinf(infection_time[v]):  # not infected yet
                         queue.append(v)
@@ -84,27 +83,28 @@ def simulate_IC(g, s=None, is_g_sampled=False, debug=False):
 
 
 def make_input(g, infp, fraction, sampling_method='uniform'):
+    """simulate one IC cascade and return the source, infection times and infection tree"""
     while True:
         infection_times, tree = simulate_IC(g)
 
         cascade_size = np.count_nonzero(np.invert(np.isinf(list(infection_times.values()))))
 
-        sample_size = int(cascade_size * fraction)
+        sample_size = math.ceil(cascade_size * fraction)
         infected_nodes = [n for n in g.nodes_iter() if not np.isinf(infection_times[n])]
         
-        if sample_size > 1 and len(infected_nodes) > sample_size:
+        if len(infected_nodes) > sample_size:
             break
+        
     if sampling_method == 'uniform':
-        obs_nodes = set(random.sample(infected_nodes, sample_size))
+        idx = np.arange(len(infected_nodes))
+        sub_idx = np.random.choice(idx, sample_size)
+        obs_nodes = set([infected_nodes[i] for i in sub_idx])
     elif sampling_method == 'late_nodes':
         obs_nodes = set(sorted(infected_nodes, key=lambda n: -infection_times[n])[:sample_size])
     else:
         raise ValueError('unknown sampling methods')
 
+    assert len(obs_nodes) > 0
     source = min(infection_times, key=lambda n: infection_times[n])
-    if source in obs_nodes:
-        obs_nodes.remove(source)
-    orig_obs_nodes = copy(obs_nodes)
-    obs_infection_times = {n: infection_times[n] for n in obs_nodes}
-    source = min(infected_nodes, key=lambda k: infection_times[k])
-    return source, orig_obs_nodes, infection_times, tree
+
+    return source, obs_nodes, infection_times, tree

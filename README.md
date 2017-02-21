@@ -118,6 +118,7 @@ When `p=0.4`
 
 # Query strategy: select the node with maximum weight
 
+Using late nodes sampling method, 
 epsilon needs to be large enough (>0.6) to beat the baseline.
 
 When eps = 0.8, the query count is almost half.
@@ -133,6 +134,17 @@ To make it more robust, we can combine baseline algorithm with this method.
 
 # Query selection strategy: source likelihood convergence speed
 
+# Query strategy running time
 
+To query all nodes:
 
+- Random: 1s
+- Min consensus: ~20s
+- 
 
+# Other issues
+
+- wheter deciding if node is source, the queried neighbors can be used to update mu as well.
+- efficient implementation of generalized Jaccard similarity
+- `networkx` `nodes\_iter` and `Parallel`
+   - the `nodes\_iter` order is inconsistent with and without Parallel
