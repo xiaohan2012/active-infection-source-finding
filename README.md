@@ -145,6 +145,12 @@ For Kronecker graph, it is:
 
 - Min consensus: 2min 37s
 
+# Findings
+
+- For cliques, you need to query all the nodes.
+- Remember to set mu to zero.
+
+
 # Other issues
 
 - wheter deciding if node is source, the queried neighbors can be used to update mu as well.

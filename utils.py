@@ -79,3 +79,12 @@ def test_generalized_jaccard_similarity():
     b = [1, 2, 3]
     assert generalized_jaccard_similarity(a, b) == 0.5
     assert generalized_jaccard_similarity(a, a) == 1.0
+
+
+def infeciton_time2weight(ts):
+    """invert the infection times so that earlier infected nodes have larger weight"""
+    times = np.array(list(ts.values()))
+    times = times[(np.invert(np.isinf(times)))]
+    max_val = np.max(times)
+    return {n: (max_val - t if not np.isinf(t) else 0) for n, t in ts.items()}
+                
