@@ -2,6 +2,8 @@ import random
 
 
 def generate_cascade(g):
+    """shit: just use Dijkstra!!
+    """
     g = g.copy()
     source = random.choice(g.nodes())
     infected = {source}
