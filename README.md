@@ -1,5 +1,9 @@
 # active infection source finding
 
+# Todo
+
+- why `dog` gives different result (something wrong with `make_input` and `make_partial_cascade``)?
+
 # Todo (optimization)
 
 - `s2n_times` using *3D tensor* to save memory and *parallellize* for speedup
@@ -163,6 +167,9 @@ For Kronecker graph, it is:
 - For cliques, you need to query all the nodes.
 - Remember to set mu to zero.
 
+# Using Harmonic mean
+
+Penalty definition: `abs(hmean - outcome)`
 
 # Other issues
 

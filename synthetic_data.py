@@ -20,7 +20,8 @@ CLIQUE = 'clique'
 
 COUNTER_FILE_SUFFIX = 'source2nodeid_counter'
 TIMES_FILE_SUFFIX = 'source2times'
-TIMES_MEAN_SUFFIX = 'source2time_mean'
+TIMES_HMEAN_SUFFIX = 'source2time_hmean'
+TIMES_AMEAN_SUFFIX = 'source2time_amean'
 
 
 def extract_larges_CC(g):
@@ -33,11 +34,16 @@ def gen_kronecker(P, k=8, n_edges=512):
     return extract_larges_CC(g)
 
 
-def load_data_by_gtype(gtype):
-    source2nodeid_counter = pkl.load(open('data/{}/{}.pkl'.format(gtype, COUNTER_FILE_SUFFIX), 'rb'))
-    times_by_source = pkl.load(open('data/{}/{}.pkl'.format(gtype, TIMES_FILE_SUFFIX), 'rb'))
+def load_data_by_gtype(gtype, mean_type='hmean'):
+    assert mean_type in {'hmean', 'amean'}
     g = nx.read_gpickle('data/{}/graph.gpkl'.format(gtype))
-    return g, times_by_source, source2nodeid_counter
+    if mean_type == 'amean':
+        source2nodeid_counter = pkl.load(open('data/{}/{}.pkl'.format(gtype, COUNTER_FILE_SUFFIX), 'rb'))
+        times_by_source = pkl.load(open('data/{}/{}.pkl'.format(gtype, TIMES_FILE_SUFFIX), 'rb'))
+        return g, times_by_source, source2nodeid_counter
+    elif mean_type == 'hmean':
+        mean_time_by_source = pkl.load(open('data/{}/{}.pkl'.format(gtype, TIMES_HMEAN_SUFFIX), 'rb'))
+        return g, mean_time_by_source
 
 
 if __name__ == "__main__":
@@ -46,14 +52,14 @@ if __name__ == "__main__":
     p = 0.7
     delta = 1
     
-    gtype = BARABASI
+    gtype = KRONECKER_PERI
 
     if gtype == KRONECKER_HIER:
-        g = gen_kronecker(P=P_hier)
+        g = gen_kronecker(P=P_hier, k=10, n_edges=2048)
     elif gtype == KRONECKER_PERI:
-        g = gen_kronecker(P=P_peri)
+        g = gen_kronecker(P=P_peri, k=10, n_edges=2048)
     elif gtype == KRONECKER_RAND:
-        g = gen_kronecker(P=P_rand)
+        g = gen_kronecker(P=P_rand, k=10, n_edges=2048)
     elif gtype == PL_TREE:
         p = 0.88
         g = random_powerlaw_tree(100, tries=10000)
@@ -80,45 +86,51 @@ if __name__ == "__main__":
     g = add_p_and_delta(g, p, delta)
     nx.write_gpickle(g, 'data/{}/graph.gpkl'.format(gtype))
 
-    cascade_number = 250
-    print('generating {} cascades'.format(cascade_number))
-    # list of list of (source, times, tree)
-    stats = Parallel(n_jobs=-1)(delayed(generate_sufficient_stats)(g)
-                                for i in range(cascade_number))
+    cascade_number = 100
+    if False:
+        print('generating {} cascades'.format(cascade_number))
+        # list of list of (source, times, tree)
+        stats = Parallel(n_jobs=-1)(delayed(generate_sufficient_stats)(g)
+                                    for i in range(cascade_number))
 
-    print('generating times_by_source')
-    # dict: node as source -> 2d matrix (infection time, node), K by N
-    times_by_source = defaultdict(list)
-    for stat in stats:
-        for s, times, _ in stat:
-            times_array = np.array([times[n] for n in g.nodes_iter()])
-            times_by_source[s].append(times_array)
-    times_by_source = {s: np.array(times2d)
-                       for s, times2d in times_by_source.items()}
+        print('generating times_by_source')
+        # dict: node as source -> 2d matrix (infection time, node), K by N
+        times_by_source = defaultdict(list)
+        for stat in stats:
+            for s, times, _ in stat:
+                times_array = np.array([times[n] for n in g.nodes_iter()])
+                times_by_source[s].append(times_array)
+        times_by_source = {s: np.array(times2d)
+                           for s, times2d in times_by_source.items()}
+    else:
+        from ic import infection_time_estimation
+        hmean_estimation, s2n_times = infection_time_estimation(g, cascade_number, 'harmonic')
+        print('generating {}'.format(TIMES_HMEAN_SUFFIX))
+        pkl.dump(hmean_estimation,
+                 open('data/{}/{}.pkl'.format(gtype, TIMES_HMEAN_SUFFIX), 'wb'))
 
-    pkl.dump(times_by_source,
-             open('data/{}/{}.pkl'.format(gtype, TIMES_FILE_SUFFIX), 'wb'))
+        # cannot pickle lambda function
+        # pkl.dump(s2n_times,
+        #          open('data/{}/{}.pkl'.format(gtype, TIMES_FILE_SUFFIX), 'wb'))
+    if False:
+        print('generating {}'.format(TIMES_AMEAN_SUFFIX))
+        # N x N matrix
+        # the ith row: using node i as the source, the mean of infection times for N nodes
+        B = np.zeros((g.number_of_nodes(), g.number_of_nodes()))
+        for source, times in times_by_source.items():
+            s = node2id[source]
+            means = np.mean(times, axis=0)
+            assert len(means) == g.number_of_nodes()
+            B[s, :] = means
 
-    print('generating {}'.format(TIMES_MEAN_SUFFIX))
-    # N x N matrix
-    # the ith row: using node i as the source, the mean of infection times for N nodes
-    B = np.zeros((g.number_of_nodes(), g.number_of_nodes()))
-    for source, times in times_by_source.items():
-        s = node2id[source]
-        means = np.mean(times, axis=0)
-        assert len(means) == g.number_of_nodes()
-        B[s, :] = means
-
-    pkl.dump(B,
-             open('data/{}/{}.pkl'.format(gtype, TIMES_MEAN_SUFFIX), 'wb'))
-    
-    print('generating source2nodeid_counter')
-    # This "cache" file is mainly for better running performance
-    source2nodeid_counter = defaultdict(dict)
-    N = g.number_of_nodes()
-    for src, times in tqdm(times_by_source.items()):
-        for i in range(N):
-            source2nodeid_counter[src][i] = Counter(times[:, i])
-    
-    pkl.dump(source2nodeid_counter,
-             open('data/{}/{}.pkl'.format(gtype, COUNTER_FILE_SUFFIX), 'wb'))
+    if False:
+        print('generating source2nodeid_counter')
+        # This "cache" file is mainly for better running performance
+        source2nodeid_counter = defaultdict(dict)
+        N = g.number_of_nodes()
+        for src, times in tqdm(times_by_source.items()):
+            for i in range(N):
+                source2nodeid_counter[src][i] = Counter(times[:, i])
+        
+        pkl.dump(source2nodeid_counter,
+                 open('data/{}/{}.pkl'.format(gtype, COUNTER_FILE_SUFFIX), 'wb'))

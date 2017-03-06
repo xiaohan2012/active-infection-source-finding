@@ -1,9 +1,9 @@
 import math
 import networkx as nx
 import numpy as np
-from scipy.stats import hmean
 from collections import defaultdict
 from joblib import Parallel, delayed
+from tqdm import tqdm
 
 
 def sample_graph_from_infection(g):
@@ -74,7 +74,7 @@ def make_partial_cascade(g, fraction, sampling_method='uniform'):
 def infection_time_estimation(g, n_rounds, mean_method='harmonic'):
     """
     estimate the harmonic mean of infection times given each node as source
-    
+
     Returns:
     dict source to nodes' infection time:
     for each node as source, return the estimated infection times of all nodes
@@ -87,24 +87,24 @@ def infection_time_estimation(g, n_rounds, mean_method='harmonic'):
     # 3D array
     s2n_times = defaultdict(lambda: defaultdict(list))
 
-    for g, s2t_len in zip(sampled_graphs, s2t_len_list):
+    for g, s2t_len in tqdm(zip(sampled_graphs, s2t_len_list)):
         for s in s2t_len:
             for n in g.nodes_iter():
                 s2n_times[s][n].append(s2t_len[s].get(n, float('inf')))
 
-    est = defaultdict(dict)
     if mean_method == 'harmonic':
         def mean_func(times):
             times = np.array(times)
             times = times[np.nonzero(times)]
-            if times.shape[0] > 0:
+            if times.shape[0] >	0:
                 return hmean(times)
-            else:
+            else:  # all zeros
                 return 0
     else:
         raise ValueError('{"harmoic"} accepted')
 
-    for s, n2times in s2n_times.items():
+    est = defaultdict(dict)
+    for s, n2times in tqdm(s2n_times.items()):
         for n, times in n2times.items():
             est[s][n] = mean_func(times)
-    return est
+    return est, s2n_times

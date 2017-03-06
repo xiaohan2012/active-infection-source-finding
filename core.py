@@ -12,15 +12,25 @@ def print_nodes_by_mu(g, mu, source, top_k=5):
                                               mu[source]))
         
 
-def accuracy_for_nodes(query, outcome, times_by_source, node2id):
+def accuracy_for_nodes(query, outcome, times_by_source=None, node2id=None):
     """
     for each node as source, calculate the fraction of cascades that matches the "outcome" on node "query"
+    
+    Note:
+    "accuracy" definition depends on the mean definition
     """
-    id_ = node2id[query]
     acc = {}
+    id_ = node2id[query]
     for s, m in times_by_source.items():
         acc[s] = np.count_nonzero(m[:, id_] == outcome) / m.shape[0]
     return acc
+
+
+def hmean_penalty(query, outcome, hmean_by_source):
+    penalty = {}
+    for s, d in hmean_by_source.items():
+        penalty[s] = abs(d[query] - outcome)
+    return penalty
 
 
 def normalize_mu(mu):
