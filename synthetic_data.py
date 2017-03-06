@@ -46,7 +46,7 @@ if __name__ == "__main__":
     p = 0.7
     delta = 1
     
-    gtype = KRONECKER_RAND
+    gtype = BARABASI
 
     if gtype == KRONECKER_HIER:
         g = gen_kronecker(P=P_hier)
@@ -58,9 +58,9 @@ if __name__ == "__main__":
         p = 0.88
         g = random_powerlaw_tree(100, tries=10000)
     elif gtype == ER:
-        g = extract_larges_CC(nx.fast_gnp_random_graph(20, 0.2))
+        g = extract_larges_CC(nx.fast_gnp_random_graph(100, 0.2))
     elif gtype == BARABASI:
-        g = extract_larges_CC(nx.barabasi_albert_graph(20, 5))
+        g = extract_larges_CC(nx.barabasi_albert_graph(100, 5))
     elif gtype == GRID:
         g = grid_2d(10)
     elif gtype == CLIQUE:

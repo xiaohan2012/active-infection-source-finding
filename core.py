@@ -8,7 +8,7 @@ def print_nodes_by_mu(g, mu, source, top_k=5):
     for n in sorted_nodes[:top_k]:
         # print('{}: {:.5f}'.format(n, mu[n]))
         pass
-    print('source ranks {} th: {:.2f}'.format(sorted_nodes.index(source)+1, 
+    print('source ranks {} th: {:.2f}'.format(sorted_nodes.index(source)+1,
                                               mu[source]))
         
 
@@ -149,8 +149,10 @@ def experiment_multiple_rounds(rounds,
 
 def generate_sufficient_stats(g):
     """
-    given one graph, simulate an IC process from all nodes
-    the same sampled graph is shared across all runs
+    **Buggy**!! the sampled graph and IC process performs **two** runs of sampling
+
+    given one graph, simulate **one** IC process from **each** node as the source on
+    the **same** sampled graph
     
     Returns:
     for each node as source, return the infection times and tree

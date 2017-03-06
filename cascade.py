@@ -2,7 +2,7 @@ import networkx as nx
 import random
 import numpy as np
 
-
+# @Deprecated
 def generate_cascade_old(g):
     """shit: just use Dijkstra!!
     """
@@ -29,7 +29,6 @@ def generate_cascade_old(g):
         if not can_continue:
             break
     return infected_times
-
 
 
 def generate_cascade(g):

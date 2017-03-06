@@ -1,8 +1,10 @@
 import math
 import networkx as nx
 import numpy as np
+from cascade import generate_cascade
 
 
+# @Deprecated("function overlap with cascade.generate_cascade")
 def sample_graph_from_infection(g):
     g_bone = g
     g = nx.Graph()
@@ -26,7 +28,7 @@ def sample_graph_from_infection(g):
 
 
 # In[4]:
-
+# @Deprecated("function overlap with `cascade.generate_cascade`")
 def simulate_IC(g, s=None, is_g_sampled=False, debug=False):
     """return dict of node to infected times
     edges in g should contain the follow information:
@@ -82,10 +84,11 @@ def simulate_IC(g, s=None, is_g_sampled=False, debug=False):
     return infection_time, infection_tree
 
 
-def make_input(g, infp, fraction, sampling_method='uniform'):
+def make_input(g, fraction, sampling_method='uniform'):
     """simulate one IC cascade and return the source, infection times and infection tree"""
     while True:
-        infection_times, tree = simulate_IC(g)
+        infection_times = generate_cascade(g)
+        tree = None  # compatibility reason
 
         cascade_size = np.count_nonzero(np.invert(np.isinf(list(infection_times.values()))))
 

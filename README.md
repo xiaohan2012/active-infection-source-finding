@@ -1,5 +1,18 @@
 # active infection source finding
 
+# Todo (optimization)
+
+- `s2n_times` using *3D tensor* to save memory and *parallellize* for speedup
+
+
+
+
+# TODO (code structure)
+
+- done: `simulations.py` and `cascade.py` should be merged into "ic.py"
+- `synthetic_data.py` and `core.py`
+
+
 ## Pagerank vs BFS
 
 `bfs_source_finding.ipynb` and `pagerank_source_finding.ipynb`
@@ -157,3 +170,4 @@ For Kronecker graph, it is:
 - efficient implementation of generalized Jaccard similarity
 - `networkx` `nodes\_iter` and `Parallel`
    - the `nodes\_iter` order is inconsistent with and without Parallel
+
