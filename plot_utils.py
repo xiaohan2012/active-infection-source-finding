@@ -57,3 +57,16 @@ def plot_snapshot(g, pos,
                                vmin=vmin,
                                vmax=vmax)
     nx.draw_networkx_edges(g, pos=pos, ax=ax)
+
+
+def add_colorbar(cvalues, cmap='OrRd', ax=None):
+    eps = np.maximum(0.0000000001, np.min(cvalues)/1000.)
+    vmin = np.min(cvalues) - eps
+    vmax = np.max(cvalues)
+    norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
+    scm = mpl.cm.ScalarMappable(norm, cmap)
+    scm.set_array(cvalues)
+    if ax is None:
+        plt.colorbar(scm)
+    else:
+        ax.colorbar(scm)
