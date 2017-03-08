@@ -4,6 +4,7 @@ import numpy as np
 from collections import defaultdict
 from joblib import Parallel, delayed
 from tqdm import tqdm
+from scipy.stats import hmean
 
 
 def sample_graph_from_infection(g):
@@ -100,8 +101,19 @@ def infection_time_estimation(g, n_rounds, mean_method='harmonic'):
                 return hmean(times)
             else:  # all zeros
                 return 0
+    elif mean_method == 'arithmetic':
+        all_times = np.array([times
+                              for n2times in s2n_times.values()
+                              for times in n2times.values()])
+        inf_value = all_times.max() + 1
+
+        def mean_func(times):
+            times = np.array(times)
+            times[np.isinf(times)] = inf_value
+            return times.mean()
+            
     else:
-        raise ValueError('{"harmoic"} accepted')
+        raise ValueError('{"harmoic", "arithmetic"} accepted')
 
     est = defaultdict(dict)
     for s, n2times in tqdm(s2n_times.items()):
