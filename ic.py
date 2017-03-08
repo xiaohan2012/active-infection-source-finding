@@ -71,7 +71,7 @@ def make_partial_cascade(g, fraction, sampling_method='uniform'):
     return source, obs_nodes, infection_times, tree
 
 
-def infection_time_estimation(g, n_rounds):
+def infection_time_estimation(g, n_rounds, return_node2id=False):
     """
     estimate the infection time distribution
 
@@ -79,6 +79,7 @@ def infection_time_estimation(g, n_rounds):
     3D tensor: N x N x max(t), source to node to infection time
         dict source to nodes' infection time distribution
     """
+    node2id = {n: i for i, n in enumerate(g.nodes_iter())}
     sampled_graphs = [sample_graph_from_infection(g)
                       for i in range(n_rounds)]
     s2t_len_list = Parallel(n_jobs=-1)(
@@ -92,7 +93,6 @@ def infection_time_estimation(g, n_rounds):
             for n in g.nodes_iter():
                 s2n_times[s][n].append(s2t_len[s].get(n, float('inf')))
 
-    node2id = {n: i for n, i in enumerate(g.nodes_iter())}
     all_times = np.array([times for n2times in s2n_times.values() for times in n2times.values()])
     all_times = np.ravel(all_times)
     unique_values = np.unique(all_times)
@@ -109,5 +109,7 @@ def infection_time_estimation(g, n_rounds):
             m[i, j, :-1] = [cnts.get(i, 0) for i in range(min_val, max_val+1)]
             m[i, j, -1] = cnts.get(float('inf'), 0)
             m[i, j, :] /= m[i, j, :].sum()
-    
-    return m
+    if return_node2id:
+        return m, node2id
+    else:
+        return m

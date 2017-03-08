@@ -33,6 +33,31 @@ def consensus_score(q, times_by_source, mu, node2id, source2nodeid_counter):
     return np.mean(similarity_scores * weights)  # weighted mean
 
 
+def centroid(cand_nodes, g, mu, sp_len):
+    """return the centroid node:
+    argmin_{q \in queryable} sum_{i \in V} mu[i] sp_len[q][i]
+    """
+    def sum_of_weighted_dist(q):
+        mus = np.array([mu[v] for v in g.nodes_iter()])
+        lens = np.array([sp_len[q][v] for v in g.nodes_iter()])
+        return np.sum(mus * lens)
+    
+    return min(cand_nodes, key=sum_of_weighted_dist)
+
+
+def expected_infection_time(mu, s2n_probas):
+    """
+    mu: probability distribution over experts
+    s2n_probas: 3D tensor, source x node x infection time (probability distribution)
+
+    Returns:
+    2D: node x infection time distribution
+    """
+    n2s_probas = np.swapaxes(s2n_probas, 0, 1)
+    n2s_probas.shape
+    return np.tensordot(mu, n2s_probas, axes=1)
+    
+
 if __name__ == "__main__":
     from graph_generators import grid_2d
     
