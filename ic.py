@@ -1,10 +1,9 @@
 import math
 import networkx as nx
 import numpy as np
-from collections import defaultdict
+from collections import defaultdict, Counter
 from joblib import Parallel, delayed
 from tqdm import tqdm
-from scipy.stats import hmean
 
 
 def sample_graph_from_infection(g):
@@ -72,13 +71,13 @@ def make_partial_cascade(g, fraction, sampling_method='uniform'):
     return source, obs_nodes, infection_times, tree
 
 
-def infection_time_estimation(g, n_rounds, mean_method='harmonic'):
+def infection_time_estimation(g, n_rounds):
     """
-    estimate the harmonic mean of infection times given each node as source
+    estimate the infection time distribution
 
     Returns:
-    dict source to nodes' infection time:
-    for each node as source, return the estimated infection times of all nodes
+    3D tensor: N x N x max(t), source to node to infection time
+        dict source to nodes' infection time distribution
     """
     sampled_graphs = [sample_graph_from_infection(g)
                       for i in range(n_rounds)]
@@ -93,30 +92,22 @@ def infection_time_estimation(g, n_rounds, mean_method='harmonic'):
             for n in g.nodes_iter():
                 s2n_times[s][n].append(s2t_len[s].get(n, float('inf')))
 
-    if mean_method == 'harmonic':
-        def mean_func(times):
-            times = np.array(times)
-            times = times[np.nonzero(times)]
-            if times.shape[0] >	0:
-                return hmean(times)
-            else:  # all zeros
-                return 0
-    elif mean_method == 'arithmetic':
-        all_times = np.array([times
-                              for n2times in s2n_times.values()
-                              for times in n2times.values()])
-        inf_value = all_times.max() + 1
-
-        def mean_func(times):
-            times = np.array(times)
-            times[np.isinf(times)] = inf_value
-            return times.mean()
-            
-    else:
-        raise ValueError('{"harmoic", "arithmetic"} accepted')
-
-    est = defaultdict(dict)
-    for s, n2times in tqdm(s2n_times.items()):
-        for n, times in n2times.items():
-            est[s][n] = mean_func(times)
-    return est, s2n_times
+    node2id = {n: i for n, i in enumerate(g.nodes_iter())}
+    all_times = np.array([times for n2times in s2n_times.values() for times in n2times.values()])
+    all_times = np.ravel(all_times)
+    unique_values = np.unique(all_times)
+    min_val, max_val = (int(unique_values.min()),
+                        int(unique_values[np.invert(np.isinf(unique_values))].max()))
+    m = np.zeros((g.number_of_nodes(),
+                  g.number_of_nodes(),
+                  max_val - min_val + 2))
+    for s in g.nodes_iter():
+        i = node2id[s]
+        for n in g.nodes_iter():
+            j = node2id[n]
+            cnts = Counter(s2n_times[s][n])
+            m[i, j, :-1] = [cnts.get(i, 0) for i in range(min_val, max_val+1)]
+            m[i, j, -1] = cnts.get(float('inf'), 0)
+            m[i, j, :] /= m[i, j, :].sum()
+    
+    return m
