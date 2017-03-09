@@ -2,11 +2,11 @@
 
 # Todo
 
-- why `dog` gives different result (something wrong with `make_input` and `make_partial_cascade``)?
+- mwu fails to terminate
 
 # Todo (optimization)
 
-- `s2n_times` using *3D tensor* to save memory and *parallellize* for speedup
+
 
 
 

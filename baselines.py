@@ -1,3 +1,6 @@
+import random
+
+
 def baseline_dog_tracker(g, obs_nodes, infection_times):
     query_count = 0
     q = min(obs_nodes, key=lambda n: infection_times[n])
@@ -7,7 +10,9 @@ def baseline_dog_tracker(g, obs_nodes, infection_times):
             obs_nodes.add(q)
             
         found_source = True
-        for u in g.neighbors(q):
+        nbs = g.neighbors(q)
+        random.shuffle(nbs)
+        for u in nbs:
             if u not in obs_nodes:  # need to query it
                 obs_nodes.add(u)
                 query_count += 1
@@ -26,3 +31,7 @@ def baseline_dog_tracker(g, obs_nodes, infection_times):
             assert source == expected
             break
     return query_count
+
+
+def random_dog_tracker(g, obs_nodes, infection_times, max_degree):
+    pass

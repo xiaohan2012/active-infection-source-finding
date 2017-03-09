@@ -45,7 +45,7 @@ if __name__ == "__main__":
     p = 0.7
     delta = 1
     
-    gtype = GRID
+    gtype = BARABASI
 
     if gtype == KRONECKER_HIER:
         g = gen_kronecker(P=P_hier, k=10, n_edges=2048)

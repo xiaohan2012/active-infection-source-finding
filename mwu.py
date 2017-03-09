@@ -31,6 +31,8 @@ def main_routine(g, node2id, id2node,
 
     save_log: boolean,
     wheter save the querying process log (mu_list, query_list)
+
+    Returns False if fails to find the source
     """
     if query_selection_method == CENTROID:
         sp_len = nx.shortest_path_length(g, weight='d')
@@ -63,7 +65,7 @@ def main_routine(g, node2id, id2node,
         print_nodes_by_mu(g, mu, source)
             
     iter_i = 0
-
+    success = False
     all_nodes = set(g.nodes())
     while iter_i < max_iter:
         iter_i += 1
@@ -71,6 +73,7 @@ def main_routine(g, node2id, id2node,
         if len(queried_nodes) == g.number_of_nodes():
             print('no more nodes to query')
             break
+
         if query_selection_method == RANDOM:
             q = random.choice(list(all_nodes))
         elif query_selection_method == MAX_MU:
@@ -122,6 +125,7 @@ def main_routine(g, node2id, id2node,
                 if debug:
                     print('**Found source')
                     print('used {} queries'.format(len(queried_nodes - set(obs_nodes))))
+                success = True
                 assert source == s
                 break
             else:
@@ -131,9 +135,12 @@ def main_routine(g, node2id, id2node,
             print('iteration: {}'.format(iter_i))
             print_nodes_by_mu(g, mu, source)
 
-    query_count = len(queried_nodes - set(obs_nodes))
-    if save_log:
-        return query_count, mu_list, query_list
+    if success:
+        query_count = len(queried_nodes - set(obs_nodes))
+        if save_log:
+            return query_count, mu_list, query_list
+        else:
+            return query_count
     else:
-        return query_count
+        return False
 
