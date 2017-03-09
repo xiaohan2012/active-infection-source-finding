@@ -62,6 +62,8 @@ def maximal_adversarial_query(g, inf_time_probas, mu, obs_nodes, infection_times
     """get the query that maximizes the expected penalty given \mu
     query's infection time is inferred from \mu if it's not observed.
 
+    mu: array not dict
+
     Return:
     max adv query
     query to expected penalty dict
