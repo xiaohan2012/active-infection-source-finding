@@ -3,7 +3,7 @@ import math
 import matplotlib as mpl
 import networkx as nx
 from matplotlib import pyplot as plt
-from core import infeciton_time2weight
+from utils import infeciton_time2weight
 
 
 def plot_snapshot(g, pos,
@@ -96,10 +96,6 @@ def plot_query_process(g, source, obs_nodes, infection_times,
                   max_node_size=max_node_size)
     ax[0, 0].set_title('ground truth')
 
-    # truncate the list to only queries by our algorithm
-    mu_list = mu_list[len(obs_nodes):]
-    query_list = query_list[len(obs_nodes):]
-
     i, j = 0, 1
 
     plot_snapshot(g, pos, mu_list[len(obs_nodes)-1],
@@ -107,6 +103,12 @@ def plot_query_process(g, source, obs_nodes, infection_times,
                   ax=ax[i, j], max_node_size=max_node_size)
     ax[i, j].set_title('using observation')
 
+
+    # truncate the list to only queries by our algorithm
+    mu_list = mu_list[len(obs_nodes):]
+    query_list = query_list[len(obs_nodes):]
+
+    # query by the algorithm
     for iter_i, mu, query in zip(range(max_plots), mu_list, query_list):
         i, j = int((iter_i+2) / ncols), (iter_i+2) % ncols
         plot_snapshot(g, pos, mu, query_node=query,

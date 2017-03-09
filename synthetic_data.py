@@ -17,6 +17,7 @@ CLIQUE = 'clique'
 
 INF_TIME_PROBA_FILE = 'inf_time_proba_matrix'
 NODE2ID_FILE = 'node2id'
+ID2NODE_FILE = 'id2node'
 
 TIMES_FILE_SUFFIX = 'source2times'
 
@@ -35,7 +36,8 @@ def load_data_by_gtype(gtype):
     g = nx.read_gpickle('data/{}/graph.gpkl'.format(gtype))
     time_probas = pkl.load(open('data/{}/{}.pkl'.format(gtype, INF_TIME_PROBA_FILE), 'rb'))
     node2id = pkl.load(open('data/{}/{}.pkl'.format(gtype, NODE2ID_FILE), 'rb'))
-    return g, time_probas, node2id
+    id2node = pkl.load(open('data/{}/{}.pkl'.format(gtype, ID2NODE_FILE), 'rb'))
+    return g, time_probas, node2id, id2node
 
 if __name__ == "__main__":
     import os
@@ -84,3 +86,6 @@ if __name__ == "__main__":
 
     pkl.dump(node2id,
              open('data/{}/{}.pkl'.format(gtype, NODE2ID_FILE), 'wb'))
+    id2node = {i: n for n, i in node2id.items()}
+    pkl.dump(id2node,
+             open('data/{}/{}.pkl'.format(gtype, ID2NODE_FILE), 'wb'))

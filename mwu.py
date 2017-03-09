@@ -18,6 +18,7 @@ def main_routine(g, node2id, id2node,
                  epsilon,
                  check_neighbor_threshold=0.1,
                  query_selection_method=MAX_MU,
+                 max_iter=float('inf'),
                  debug=False,
                  save_log=False):
     """
@@ -60,8 +61,7 @@ def main_routine(g, node2id, id2node,
 
     if debug:
         print_nodes_by_mu(g, mu, source)
-        
-    max_iter = float('inf')
+            
     iter_i = 0
 
     all_nodes = set(g.nodes())
@@ -72,15 +72,21 @@ def main_routine(g, node2id, id2node,
             print('no more nodes to query')
             break
         if query_selection_method == RANDOM:
-            q = random.choice(queryable)
+            q = random.choice(list(all_nodes))
         elif query_selection_method == MAX_MU:
-            q = max(all_nodes - queried_nodes, key=lambda n: mu[n])
+            q = max(all_nodes, key=lambda n: mu[n])
         elif query_selection_method == MAX_ADV:
             mu_array = np.zeros(g.number_of_nodes())
             for n, val in mu.items():
                 mu_array[node2id[n]] = val
-            q, _ = maximal_adversarial_query(
+            _, node2penalty = maximal_adversarial_query(
                 g, s2n_probas, mu_array, obs_nodes, infection_times, node2id, id2node)
+            node_ids = [node2id[n] for n in node2penalty.keys()]
+            qid = np.random.choice(node_ids,
+                                   size=1,
+                                   p=list(normalize_mu(node2penalty).values()))
+            assert len(qid) == 1
+            q = id2node[qid[0]]
         elif query_selection_method == CENTROID:
             q = centroid(queryable, g, mu, sp_len)
         else:
