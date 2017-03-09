@@ -1,7 +1,9 @@
 import numpy as np
+import math
 import matplotlib as mpl
 import networkx as nx
 from matplotlib import pyplot as plt
+from core import infeciton_time2weight
 
 
 def plot_snapshot(g, pos,
@@ -70,3 +72,49 @@ def add_colorbar(cvalues, cmap='OrRd', ax=None):
         plt.colorbar(scm)
     else:
         ax.colorbar(scm)
+
+
+def plot_query_process(g, source, obs_nodes, infection_times,
+                       mu_list, query_list,
+                       check_neighbor_threshold,
+                       pos,
+                       ncols=2, width=12, max_plots=10,
+                       max_node_size=750):
+    """
+    mu_list: the \mu *after* the ith iteration.
+    query_list: sequence of queries (including observed nodes)
+    """
+    nrows = math.ceil((max_plots+2) / ncols)
+    height = int(width * nrows / ncols)
+        
+    fig, ax = plt.subplots(nrows, ncols,
+                           sharex=True, sharey=True,
+                           figsize=(width, height))
+    node2weight = infeciton_time2weight(infection_times)
+    plot_snapshot(g, pos, node2weight, source_node=source,
+                  queried_nodes=obs_nodes, ax=ax[0, 0],
+                  max_node_size=max_node_size)
+    ax[0, 0].set_title('ground truth')
+
+    # truncate the list to only queries by our algorithm
+    mu_list = mu_list[len(obs_nodes):]
+    query_list = query_list[len(obs_nodes):]
+
+    i, j = 0, 1
+
+    plot_snapshot(g, pos, mu_list[len(obs_nodes)-1],
+                  source_node=source, queried_nodes=obs_nodes,
+                  ax=ax[i, j], max_node_size=max_node_size)
+    ax[i, j].set_title('using observation')
+
+    for iter_i, mu, query in zip(range(max_plots), mu_list, query_list):
+        i, j = int((iter_i+2) / ncols), (iter_i+2) % ncols
+        plot_snapshot(g, pos, mu, query_node=query,
+                      source_node=source,
+                      queried_nodes=set(obs_nodes) | set(query_list[:iter_i]),
+                      ax=ax[i, j],
+                      max_node_size=max_node_size)
+        ax[i, j].set_title('iter_i={} mu(source)={:.5f} ({})'.format(iter_i,
+                                                                     mu[source],
+                                                                     check_neighbor_threshold))
+    return fig, ax

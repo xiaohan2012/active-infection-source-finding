@@ -26,6 +26,20 @@ def accuracy_for_nodes(query, outcome, times_by_source=None, node2id=None):
     return acc
 
 
+def penalty_using_distribution(query, outcome, s2n_probas, node2id):
+    """
+    Penalty calcualted from the infection time distribution
+    Return:
+
+    dict of node to penalty
+    """
+    r = {}
+    time_id = (-1 if np.isinf(outcome) else int(outcome))
+    for n, i in node2id.items():
+        r[n] = 1 - s2n_probas[i, node2id[query], time_id]
+    return r
+
+
 def hmean_penalty(query, outcome, hmean_by_source):
     penalty = {}
     for s, d in hmean_by_source.items():
