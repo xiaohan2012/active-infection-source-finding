@@ -56,7 +56,47 @@ def expected_infection_time(mu, s2n_probas):
     n2s_probas = np.swapaxes(s2n_probas, 0, 1)
     n2s_probas.shape
     return np.tensordot(mu, n2s_probas, axes=1)
+
+
+def maximal_adversarial_query(g, inf_time_probas, mu, obs_nodes, infection_times, node2id, id2node):
+    """get the query that maximizes the expected penalty given \mu
+    query's infection time is inferred from \mu if it's not observed.
+
+    Return:
+    max adv query
+    query to expected penalty dict
+    """
+    # inferring infection time of hidden nodes
+    exp_times = expected_infection_time(mu, inf_time_probas)
+    exp_times = override_exp_times_by_obs(exp_times, obs_nodes, node2id, infection_times)
+    N = g.number_of_nodes()
+    exp_times_3d = np.broadcast_to(exp_times, (N, ) + exp_times.shape)
+
+    # some check
+    for i in range(N):
+        assert np.allclose(exp_times_3d[i, :, :], exp_times)
+        assert exp_times_3d.shape == inf_time_probas.shape
+
+    # expert (source) to event (query) penalty
+    s2n_penalties = np.abs(inf_time_probas - exp_times_3d).sum(axis=2) / 2
+    assert s2n_penalties.shape == (N, N)
+
+    # expected penalty of query (weighted by \mu)
+    query_penalties = np.dot(mu, s2n_penalties)
+    return id2node[np.argmax(query_penalties)], \
+        {id2node[i]: val for i, val in enumerate(query_penalties)}
     
+
+def override_exp_times_by_obs(exp_times, obs_nodes, node2id, infection_times):
+    """override by observations
+    """
+    for n in obs_nodes:
+        i = node2id[n]
+        exp_times[i, :] = 0
+        exp_times[i, infection_times[n]] = 1
+    return exp_times
+
+
 
 if __name__ == "__main__":
     from graph_generators import grid_2d
