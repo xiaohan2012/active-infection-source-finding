@@ -21,22 +21,26 @@ def g_prob():
 
 
 def test_line_det(g_det):
-    m = infection_time_estimation(g_det, 10)
-    assert m.shape == (3, 3, 4)
+    d = infection_time_estimation(g_det, 10)
+    assert len(d) == 3
+    for m in d.values():
+        assert m.shape == (3, 4)
     for i in range(3):
         for j in range(3):
             expected = np.zeros(4)
             expected[int(abs(i-j))] = 1
-            assert np.allclose(m[i, j, :], expected)
+            assert np.allclose(d[i][j, :].toarray()[0], expected)
 
 
 def test_line_prob(g_prob):
-    m = infection_time_estimation(g_prob, 5000)
-    assert m.shape == (3, 3, 4)
-    aae(m[0, 1, :], np.array([0, 0.7, 0, 0.3]), decimal=2)
-    aae(m[0, 2, :], np.array([0, 0, 0.49, 0.51]), decimal=2)
-    aae(m[2, 1, :], np.array([0, 0.7, 0, 0.3]), decimal=2)
-    aae(m[2, 0, :], np.array([0, 0, 0.49, 0.51]), decimal=2)
-    aae(m[1, 2, :], np.array([0, 0.7, 0, 0.3]), decimal=2)
-    aae(m[1, 0, :], np.array([0, 0.7, 0, 0.3]), decimal=2)
+    d = infection_time_estimation(g_prob, 5000)
+    assert len(d) == 3
+    for m in d.values():
+        assert m.shape == (3, 4)
+    aae(d[0][1, :].toarray()[0], np.array([0, 0.7, 0, 0.3]), decimal=2)
+    aae(d[0][2, :].toarray()[0], np.array([0, 0, 0.49, 0.51]), decimal=2)
+    aae(d[2][1, :].toarray()[0], np.array([0, 0.7, 0, 0.3]), decimal=2)
+    aae(d[2][0, :].toarray()[0], np.array([0, 0, 0.49, 0.51]), decimal=2)
+    aae(d[1][2, :].toarray()[0], np.array([0, 0.7, 0, 0.3]), decimal=2)
+    aae(d[1][0, :].toarray()[0], np.array([0, 0.7, 0, 0.3]), decimal=2)
 

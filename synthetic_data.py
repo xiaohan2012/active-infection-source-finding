@@ -65,6 +65,9 @@ if __name__ == "__main__":
     parser.add_argument('-b', '--exponent_base', type=int,
                         default=10,
                         help="base of the size exponent")
+    parser.add_argument('-n', '--n_rounds', type=int,
+                        default=100,
+                        help="number of simulated cascades")
 
     args = parser.parse_args()
     gtype = args.type
@@ -105,8 +108,7 @@ if __name__ == "__main__":
     g = add_p_and_delta(g, p, delta)
     nx.write_gpickle(g, '{}/graph.gpkl'.format(output_dir, gtype))
 
-    n_rounds = 100
-    time_probas, node2id = infection_time_estimation(g, n_rounds,
+    time_probas, node2id = infection_time_estimation(g, args.n_rounds,
                                                      return_node2id=True)
     pkl.dump(time_probas,
              open('{}/{}.pkl'.format(output_dir, INF_TIME_PROBA_FILE), 'wb'))

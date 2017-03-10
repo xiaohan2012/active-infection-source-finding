@@ -3,6 +3,7 @@ import networkx as nx
 import numpy as np
 from collections import defaultdict, Counter
 from joblib import Parallel, delayed
+from scipy.sparse import csr_matrix
 from tqdm import tqdm
 
 
@@ -76,7 +77,9 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
     estimate the infection time distribution
 
     Returns:
-    3D tensor: N x N x max(t), source to node to infection time
+    dict of source to 2D sparse matrices (node to infection time probabilities)
+        can be viewed as 3D tensor:
+        N x N x max(t), source to node to infection time
         dict source to nodes' infection time distribution
     """
     node2id = {n: i for i, n in enumerate(g.nodes_iter())}
@@ -98,18 +101,27 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
     unique_values = np.unique(all_times)
     min_val, max_val = (int(unique_values.min()),
                         int(unique_values[np.invert(np.isinf(unique_values))].max()))
-    m = np.zeros((g.number_of_nodes(),
-                  g.number_of_nodes(),
-                  max_val - min_val + 2))
+    n_times = max_val - min_val + 2
+    d = dict()
     for s in g.nodes_iter():
         i = node2id[s]
+        row = []  # infected node
+        col = []  # infection time
+        data = []  # probabilities
         for n in g.nodes_iter():
             j = node2id[n]
             cnts = Counter(s2n_times[s][n])
-            m[i, j, :-1] = [cnts.get(i, 0) for i in range(min_val, max_val+1)]
-            m[i, j, -1] = cnts.get(float('inf'), 0)
-            m[i, j, :] /= m[i, j, :].sum()
+            cnts[n_times-1] = cnts[float('inf')]
+            del cnts[float('inf')]
+            row += [j] * len(cnts)
+            col_slice, cnts_list = map(list, zip(*cnts.items()))
+            col += col_slice
+            cnts_array = np.array(cnts_list, dtype=np.float)
+            cnts_array /= cnts_array.sum()
+            data += cnts_array.tolist()
+
+        d[i] = csr_matrix((data, (row, col)), shape=(g.number_of_nodes(), n_times))
     if return_node2id:
-        return m, node2id
+        return d, node2id
     else:
-        return m
+        return d
