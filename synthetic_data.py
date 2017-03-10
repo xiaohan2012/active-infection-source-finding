@@ -1,3 +1,4 @@
+
 import argparse
 import pickle as pkl
 import networkx as nx
@@ -86,7 +87,7 @@ if __name__ == "__main__":
         g = gen_kronecker(P=P_rand, k=args.size_exponent, n_edges=2**args.size_exponent * 3)
     elif gtype == PL_TREE:
         p = 0.88
-        g = random_powerlaw_tree(size, tries=10000)
+        g = random_powerlaw_tree(size, tries=999999)
     elif gtype == ER:
         g = extract_larges_CC(nx.fast_gnp_random_graph(size, 0.2))
     elif gtype == BARABASI:

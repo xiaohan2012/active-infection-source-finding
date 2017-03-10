@@ -103,7 +103,7 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
                         int(unique_values[np.invert(np.isinf(unique_values))].max()))
     n_times = max_val - min_val + 2
     d = dict()
-    for s in g.nodes_iter():
+    for s in tqdm(g.nodes_iter()):
         i = node2id[s]
         row = []  # infected node
         col = []  # infection time
