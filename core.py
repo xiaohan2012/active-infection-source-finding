@@ -36,7 +36,7 @@ def penalty_using_distribution(query, outcome, s2n_probas, node2id):
     r = {}
     time_id = (-1 if np.isinf(outcome) else int(outcome))
     for n, i in node2id.items():
-        r[n] = 1 - s2n_probas[i, node2id[query], time_id]
+        r[n] = 1 - s2n_probas[i][node2id[query], time_id]
     return r
 
 

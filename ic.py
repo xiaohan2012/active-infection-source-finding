@@ -2,7 +2,6 @@ import math
 import networkx as nx
 import numpy as np
 from collections import defaultdict, Counter
-from joblib import Parallel, delayed
 from scipy.sparse import csr_matrix
 from tqdm import tqdm
 
@@ -72,6 +71,7 @@ def make_partial_cascade(g, fraction, sampling_method='uniform'):
     return source, obs_nodes, infection_times, tree
 
 
+# @profile
 def infection_time_estimation(g, n_rounds, return_node2id=False):
     """
     estimate the infection time distribution
@@ -83,7 +83,7 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
         dict source to nodes' infection time distribution
     """
     node2id = {n: i for i, n in enumerate(g.nodes_iter())}
-    s2n_times = defaultdict(lambda: defaultdict(list))
+    s2n_times_counter = defaultdict(lambda: defaultdict(Counter))
 
     # run in serial to save memory
     for i in tqdm(range(n_rounds)):
@@ -91,11 +91,16 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
         s2t_len = nx.shortest_path_length(sampled_g, weight='d')
         for s in s2t_len:
             for n in sampled_g.nodes_iter():
-                s2n_times[s][n].append(s2t_len[s].get(n, float('inf')))
+                time = s2t_len[s].get(n, float('inf'))
+                s2n_times_counter[s][n][time] += 1
 
-    all_times = np.array([times for n2times in s2n_times.values() for times in n2times.values()])
+    all_times = np.array([t
+                          for n2times_counter in s2n_times_counter.values()
+                          for counter in n2times_counter.values()
+                          for t in counter.keys()])
     all_times = np.ravel(all_times)
     unique_values = np.unique(all_times)
+
     min_val, max_val = (int(unique_values.min()),
                         int(unique_values[np.invert(np.isinf(unique_values))].max()))
     n_times = max_val - min_val + 2
@@ -107,7 +112,7 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
         data = []  # probabilities
         for n in g.nodes_iter():
             j = node2id[n]
-            cnts = Counter(s2n_times[s][n])
+            cnts = s2n_times_counter[s][n]
             cnts[n_times-1] = cnts[float('inf')]
             del cnts[float('inf')]
             row += [j] * len(cnts)

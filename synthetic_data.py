@@ -42,11 +42,14 @@ def gen_kronecker(P, k=8, n_edges=512):
     return extract_larges_CC(g)
 
 
-def load_data_by_gtype(gtype):
-    g = nx.read_gpickle('data/{}/graph.gpkl'.format(gtype))
-    time_probas = pkl.load(open('data/{}/{}.pkl'.format(gtype, INF_TIME_PROBA_FILE), 'rb'))
-    node2id = pkl.load(open('data/{}/{}.pkl'.format(gtype, NODE2ID_FILE), 'rb'))
-    id2node = pkl.load(open('data/{}/{}.pkl'.format(gtype, ID2NODE_FILE), 'rb'))
+def load_data_by_gtype(gtype, size_param_str):
+    g = nx.read_gpickle('data/{}/{}/graph.gpkl'.format(gtype, size_param_str))
+    time_probas = pkl.load(open('data/{}/{}/{}.pkl'.format(gtype, size_param_str,
+                                                           INF_TIME_PROBA_FILE), 'rb'))
+    node2id = pkl.load(open('data/{}/{}/{}.pkl'.format(gtype, size_param_str,
+                                                       NODE2ID_FILE), 'rb'))
+    id2node = pkl.load(open('data/{}/{}/{}.pkl'.format(gtype, size_param_str,
+                                                       ID2NODE_FILE), 'rb'))
     return g, time_probas, node2id, id2node
 
 if __name__ == "__main__":
@@ -107,10 +110,12 @@ if __name__ == "__main__":
 
     print('graph type: {}'.format(gtype))
     g = add_p_and_delta(g, p, delta)
-    nx.write_gpickle(g, '{}/graph.gpkl'.format(output_dir, gtype))
 
     time_probas, node2id = infection_time_estimation(g, args.n_rounds,
                                                      return_node2id=True)
+    
+    nx.write_gpickle(g, '{}/graph.gpkl'.format(output_dir, gtype))
+
     pkl.dump(time_probas,
              open('{}/{}.pkl'.format(output_dir, INF_TIME_PROBA_FILE), 'wb'))
 
