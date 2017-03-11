@@ -2,6 +2,7 @@ import math
 import networkx as nx
 import numpy as np
 from collections import defaultdict, Counter
+from joblib import Parallel, delayed
 from scipy.sparse import csr_matrix
 from tqdm import tqdm
 
@@ -84,14 +85,25 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
     """
     node2id = {n: i for i, n in enumerate(g.nodes_iter())}
     s2n_times_counter = defaultdict(lambda: defaultdict(Counter))
-
+    inf = float('inf')
     # run in serial to save memory
     for i in tqdm(range(n_rounds)):
         sampled_g = sample_graph_from_infection(g)
-        s2t_len = nx.shortest_path_length(sampled_g, weight='d')
+        # this is using Dijkstra
+        # s2t_len = nx.shortest_path_length(sampled_g, weight='d')
+
+        # this is serial BFS
+        s2t_len = nx.shortest_path_length(sampled_g)
+
+        # this is parallel BFS (slow)
+        # results = Parallel(n_jobs=-1)(
+        #     delayed(nx.single_source_shortest_path_length)(g, n)
+        #     for n in g.nodes_iter())
+        # s2t_len = {n: t_len for n, t_len in zip(g.nodes_iter(), results)}
+        
         for s in s2t_len:
             for n in sampled_g.nodes_iter():
-                time = s2t_len[s].get(n, float('inf'))
+                time = s2t_len[s].get(n, inf)
                 s2n_times_counter[s][n][time] += 1
 
     all_times = np.array([t
