@@ -5,7 +5,7 @@ cmd="python synthetic_data.py"
 for e ({6..7}); do
     print grid
     print $e;
-    eval ${cmd} -t grid -b 2 -e ${e};
+    # eval ${cmd} -t grid -b 2 -e ${e};
 done
 
 for e ({12..13}); do

@@ -83,17 +83,14 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
         dict source to nodes' infection time distribution
     """
     node2id = {n: i for i, n in enumerate(g.nodes_iter())}
-    sampled_graphs = [sample_graph_from_infection(g)
-                      for i in range(n_rounds)]
-    s2t_len_list = Parallel(n_jobs=-1)(
-        delayed(nx.shortest_path_length)(g, weight='d')
-        for g in sampled_graphs)
-    # 3D array
     s2n_times = defaultdict(lambda: defaultdict(list))
 
-    for g, s2t_len in tqdm(zip(sampled_graphs, s2t_len_list)):
+    # run in serial to save memory
+    for i in tqdm(range(n_rounds)):
+        sampled_g = sample_graph_from_infection(g)
+        s2t_len = nx.shortest_path_length(sampled_g, weight='d')
         for s in s2t_len:
-            for n in g.nodes_iter():
+            for n in sampled_g.nodes_iter():
                 s2n_times[s][n].append(s2t_len[s].get(n, float('inf')))
 
     all_times = np.array([times for n2times in s2n_times.values() for times in n2times.values()])

@@ -43,4 +43,3 @@ def test_line_prob(g_prob):
     aae(d[2][0, :].toarray()[0], np.array([0, 0, 0.49, 0.51]), decimal=2)
     aae(d[1][2, :].toarray()[0], np.array([0, 0.7, 0, 0.3]), decimal=2)
     aae(d[1][0, :].toarray()[0], np.array([0, 0.7, 0, 0.3]), decimal=2)
-
