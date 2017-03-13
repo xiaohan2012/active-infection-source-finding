@@ -2,6 +2,8 @@ import numpy as np
 from collections import Counter
 from functools import reduce
 
+
+
 # @profile
 def generalized_jaccard_similarity(a, b):
     """a and b should be list
@@ -87,4 +89,3 @@ def infeciton_time2weight(ts):
     times = times[(np.invert(np.isinf(times)))]
     max_val = np.max(times)
     return {n: (max_val - t if not np.isinf(t) else 0) for n, t in ts.items()}
-                
