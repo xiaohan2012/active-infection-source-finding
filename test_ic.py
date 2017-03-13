@@ -33,6 +33,7 @@ def test_line_det(g_det):
 
 
 def test_line_prob(g_prob):
+    np.random.seed(12345)
     d = infection_time_estimation(g_prob, 5000)
     assert len(d) == 3
     for m in d.values():
