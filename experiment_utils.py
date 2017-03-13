@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import random
 from ic import make_partial_cascade
 from mwu import main_routine as mwu
@@ -41,3 +42,8 @@ def experiment_dog_multiple_rounds(rounds, g, fraction, sampling_method):
         c = baseline_dog_tracker(g, obs_nodes, infection_times)
         cnts.append(c)
     return cnts
+
+
+def counts_to_stat(counts):
+    s = pd.Series(list(filter(lambda c: c is not False, counts)))
+    return s.describe().to_dict()
