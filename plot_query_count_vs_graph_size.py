@@ -12,7 +12,7 @@ def main(gtype, base=2):
     fig, ax = plt.subplots(1, 1)
     methods, x = df.index.levels
     for m in methods:
-        y = df['mean'][m]
+        y = df['50%'][m]
         lb = df['25%'][m]
         ub = df['75%'][m]
         ax.errorbar(x, y, yerr=np.array([lb, ub]), fmt='o-')
