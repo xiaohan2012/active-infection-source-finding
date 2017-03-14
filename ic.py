@@ -76,6 +76,7 @@ def make_partial_cascade(g, fraction, sampling_method='uniform'):
 def infection_time_estimation(g, n_rounds, return_node2id=False):
     """
     estimate the infection time distribution
+    n_rounds of cascades for *each* node
 
     Returns:
     dict of source to 2D sparse matrices (node to infection time probabilities)
@@ -101,7 +102,7 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
         #     for n in g.nodes_iter())
         # s2t_len = {n: t_len for n, t_len in zip(g.nodes_iter(), results)}
         
-        for s in s2t_len:
+        for s in s2t_len:  # one cascade for each node
             for n in sampled_g.nodes_iter():
                 time = s2t_len[s].get(n, inf)
                 s2n_times_counter[s][n][time] += 1
