@@ -54,7 +54,10 @@ def hmean_penalty(query, outcome, hmean_by_source):
 
 def normalize_mu(mu):
     total = sum(mu.values())
-    return {n: v / total for n, v in mu.items()}
+    try:
+        return {n: v / total for n, v in mu.items()}
+    except ZeroDivisionError:  # back to uniform
+        return {n: 1 / len(mu) for n, v in mu.items()}
 
 
 def mwu(g, source, obs_nodes, infection_times,
