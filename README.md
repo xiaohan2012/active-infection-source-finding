@@ -2,15 +2,14 @@
 
 # Todo
 
-- why `edge_mwu` sucks when setting `mu[q]=0` for query node that is not source.
-- when doing neighborhood querying, why updating at each neighbor sucks?
+- `edge_mwu: why it` sucks when setting `mu[q]=0` for query node that is not source.
+- `edge_mwu: when doing neighborhood querying, why updating at each neighbor sucks?
+- `max_mu`: why it's so unstable?
+
 
 # Todo (optimization)
 
-
-
-
-
+- `edge_mwu`
 
 # TODO (code structure)
 
