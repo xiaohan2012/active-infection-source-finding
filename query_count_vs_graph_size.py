@@ -1,17 +1,16 @@
-
 # coding: utf-8
-
-# In[14]:
-
-
+import os
+import arrow
 import pandas as pd
 from mwu import (MAX_MU, RANDOM)
+from edge_mwu import MEDIAN_NODE
 from synthetic_data import (load_data_by_gtype, all_graph_types)
-from experiment_utils import (experiment_mwu_multiple_rounds,
+from experiment_utils import (experiment_node_mwu_multiple_rounds,
+                              experiment_edge_mwu_multiple_rounds,
                               experiment_dog_multiple_rounds, counts_to_stat)
 
 
-def main(n_rounds, gtype, size_params,
+def main(query_methods, n_rounds, gtype, size_params,
          fraction, epsilon, sampling_method,
          check_neighbor_threshold):
     rows = []
@@ -19,39 +18,70 @@ def main(n_rounds, gtype, size_params,
     for size_param in size_params:
         print(size_param)
         try:
-            g, time_probas, node2id, id2node = load_data_by_gtype(gtype, size_param)
+            g, time_probas, dir_tbl, inf_tbl, node2id, id2node = load_data_by_gtype(gtype, size_param)
         except IOError:
             print('fail to load {}/{}'.format(gtype, size_param))
             break
 
-        def mwu_wrapper(method):
-            return experiment_mwu_multiple_rounds(n_rounds, g, node2id, id2node, time_probas,
-                                                  fraction=fraction, epsilon=epsilon,
-                                                  sampling_method=sampling_method,
-                                                  query_selection_method=method,
-                                                  check_neighbor_threshold=check_neighbor_threshold,
-                                                  max_iter=g.number_of_nodes())
-                
-        counts = mwu_wrapper(MAX_MU)
-        rows.append(counts_to_stat(counts))
-        indices.append((MAX_MU, g.number_of_nodes()))
+        def node_mwu_wrapper(method):
+            return experiment_node_mwu_multiple_rounds(
+                n_rounds, g, node2id, id2node, time_probas,
+                fraction=fraction, epsilon=epsilon,
+                sampling_method=sampling_method,
+                query_selection_method=method,
+                check_neighbor_threshold=check_neighbor_threshold,
+                max_iter=g.number_of_nodes())
 
-        counts = mwu_wrapper(RANDOM)
-        rows.append(counts_to_stat(counts))
-        indices.append((RANDOM, g.number_of_nodes()))
+        def edge_mwu_wrapper(method):
+            assert dir_tbl is not None
+            assert inf_tbl is not None
+            return experiment_edge_mwu_multiple_rounds(
+                g, method,
+                dir_tbl, inf_tbl,
+                fraction=fraction,
+                sampling_method=sampling_method,
+                rounds=n_rounds,
+                max_iter=g.number_of_nodes())
         
-        counts = experiment_dog_multiple_rounds(n_rounds, g, fraction, sampling_method)
-        rows.append(counts_to_stat(counts))
-        indices.append(('dog', g.number_of_nodes()))
+        if MAX_MU in query_methods:
+            print(MAX_MU)
+            counts = node_mwu_wrapper(MAX_MU)
+            rows.append(counts_to_stat(counts))
+            indices.append((MAX_MU, g.number_of_nodes()))
 
+        if RANDOM in query_methods:
+            print(RANDOM)
+            counts = node_mwu_wrapper(RANDOM)
+            rows.append(counts_to_stat(counts))
+            indices.append((RANDOM, g.number_of_nodes()))
+
+        if 'dog' in query_methods:
+            print('dog')
+            counts = experiment_dog_multiple_rounds(n_rounds, g, fraction, sampling_method)
+            rows.append(counts_to_stat(counts))
+            indices.append(('dog', g.number_of_nodes()))
+
+        if MEDIAN_NODE in query_methods:
+            print(MEDIAN_NODE)
+            counts = edge_mwu_wrapper(MEDIAN_NODE)
+            rows.append(counts_to_stat(counts))
+            indices.append((MEDIAN_NODE, g.number_of_nodes()))
+            
         index = pd.MultiIndex.from_tuples(indices, names=('method', 'graph size'))
         df = pd.DataFrame.from_records(rows, index=index)
 
-        df.to_pickle('data/{}/performance.pkl'.format(gtype))
-        print('saving snapshot done')
+        path = 'data/{}/performance.pkl'.format(gtype)
+        if os.path.exists(path):
+            utc = arrow.utcnow()
+            date = utc.to('Europe/Helsinki').format('YYYY-MM-DD')
+            path = 'data/{}/performance-{}.pkl'.format(gtype, date)
+        df.to_pickle(path)
+        print('saving snapshot to {} done'.format(path))
 
 
 if __name__ == '__main__':
+    ALL_METHODS = (MAX_MU, RANDOM, MEDIAN_NODE, 'dog')
+
     import argparse
     
     parser = argparse.ArgumentParser()
@@ -64,6 +94,8 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--sampling_method',
                         choices=('late_nodes', 'uniform'),
                         default='late_nodes')
+    parser.add_argument('query_methods', metavar='Q', nargs='+', type=str,
+                        choices=ALL_METHODS)
 
     parser.add_argument('-n', '--n_rounds', default=100, type=int)
     parser.add_argument('-t', '--gtype', choices=all_graph_types, required=True)
@@ -73,8 +105,9 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     size_params = ['{}-{}'.format(args.base, e) for e in range(args.emin, args.emax+1)]
-    
-    main(args.n_rounds,
+    print(args.query_methods)
+    main(args.query_methods,
+         args.n_rounds,
          args.gtype,
          size_params,
          args.fraction,

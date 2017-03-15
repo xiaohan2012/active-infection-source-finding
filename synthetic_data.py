@@ -7,6 +7,7 @@ from graph_generator import kronecker_random_graph, grid_2d, \
     P_peri ,P_hier, P_rand, add_p_and_delta
 from ic import infection_time_estimation
 
+
 KRONECKER_RAND = 'kr-rand'
 KRONECKER_PERI = 'kr-peri'
 KRONECKER_HIER = 'kr-hier'
@@ -28,6 +29,7 @@ all_graph_types = [KRONECKER_RAND,
 INF_TIME_PROBA_FILE = 'inf_time_proba_matrix'
 NODE2ID_FILE = 'node2id'
 ID2NODE_FILE = 'id2node'
+REWARD_TABLE_NAME = 'edge_reward_tables'
 
 TIMES_FILE_SUFFIX = 'source2times'
 
@@ -44,13 +46,19 @@ def gen_kronecker(P, k=8, n_edges=512):
 
 def load_data_by_gtype(gtype, size_param_str):
     g = nx.read_gpickle('data/{}/{}/graph.gpkl'.format(gtype, size_param_str))
+    try:
+        dir_tbl, inf_tbl = pkl.load(open('data/{}/{}/{}.pkl'.format(
+            gtype, size_param_str,
+            REWARD_TABLE_NAME), 'rb'))
+    except IOError:
+        dir_tbl, inf_tbl = None, None
     time_probas = pkl.load(open('data/{}/{}/{}.pkl'.format(gtype, size_param_str,
                                                            INF_TIME_PROBA_FILE), 'rb'))
     node2id = pkl.load(open('data/{}/{}/{}.pkl'.format(gtype, size_param_str,
                                                        NODE2ID_FILE), 'rb'))
     id2node = pkl.load(open('data/{}/{}/{}.pkl'.format(gtype, size_param_str,
                                                        ID2NODE_FILE), 'rb'))
-    return g, time_probas, node2id, id2node
+    return g, time_probas, dir_tbl, inf_tbl, node2id, id2node
 
 if __name__ == "__main__":
     import os

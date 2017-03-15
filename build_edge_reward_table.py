@@ -2,7 +2,7 @@ import networkx as nx
 import pickle as pkl
 from tqdm import tqdm
 from collections import defaultdict
-from synthetic_data import load_data_by_gtype
+from synthetic_data import load_data_by_gtype, REWARD_TABLE_NAME
 from ic import sample_graph_from_infection
 
 
@@ -35,8 +35,8 @@ def build_reward_table(g, n_rounds=100):
 
 
 def main(gtype, size_param):
-    output_path = 'data/{}/{}/edge_reward_tables.pkl'.format(
-        gtype, size_param)
+    output_path = 'data/{}/{}/{}.pkl'.format(
+        gtype, size_param, REWARD_TABLE_NAME)
     g = load_data_by_gtype(gtype, size_param)[0]
     tbl1, tbl2 = build_reward_table(g)
     print('writing to {}'.format(output_path))
