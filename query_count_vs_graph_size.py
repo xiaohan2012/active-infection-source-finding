@@ -18,7 +18,7 @@ def main(query_methods, n_rounds, gtype, size_params,
     for size_param in size_params:
         print(size_param)
         try:
-            g, time_probas, dir_tbl, inf_tbl, node2id, id2node = load_data_by_gtype(gtype, size_param)
+            g, time_probas, dir_tbl, inf_tbl, sp_len, node2id, id2node = load_data_by_gtype(gtype, size_param)
         except IOError:
             print('fail to load {}/{}'.format(gtype, size_param))
             break
@@ -38,6 +38,8 @@ def main(query_methods, n_rounds, gtype, size_params,
             return experiment_edge_mwu_multiple_rounds(
                 g, method,
                 dir_tbl, inf_tbl,
+                sp_len,
+                check_neighbor_threshold=check_neighbor_threshold,
                 fraction=fraction,
                 sampling_method=sampling_method,
                 rounds=n_rounds,

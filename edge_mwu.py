@@ -59,7 +59,6 @@ def mwu_by_infection_direction_old(g,
                                    obs_nodes, infection_times, source,
                                    direction_reward_table,
                                    inf_reward_table,
-                                   sp_len=None,
                                    max_iter=float('inf'),
                                    save_logs=False,
                                    debug=False):
@@ -116,11 +115,18 @@ def mwu_by_infection_direction_old(g,
     return len(queried_nodes - obs_nodes)
 
 
+def update_mu(g, mu, reward):
+    for n in g.nodes_iter():
+        mu[n] *= reward[n]
+    return normalize_mu(mu)
+
+
 def mwu_by_infection_direction(g,
                                query_method,
                                obs_nodes, infection_times, source,
                                direction_reward_table,
                                inf_reward_table,
+                               sp_len=None,
                                check_neighbor_threshold=0.01,
                                max_iter=float('inf'),
                                save_logs=False,
@@ -160,22 +166,30 @@ def mwu_by_infection_direction(g,
         if np.isinf(infection_times[q]):  # uninfected
             reward = {n: inf_reward_table[(n, q)]
                       for n in g.nodes_iter()}
-            for n in g.nodes_iter():
-                mu[n] *= reward[n]
+            mu = update_mu(g, mu, reward)
         else:
             if mu[q] > check_neighbor_threshold:
                 found_source = True
                 for u in g.neighbors(q):
                     queried_nodes.add(u)
                     if infection_times[u] < infection_times[q]:
-                        # reward = {n: direction_reward_table[(n, u, q)]
-                        #           for n in g.nodes_iter()}
+                        reward = {n: direction_reward_table[(n, u, q)]
+                                  for n in g.nodes_iter()}
+                        mu = update_mu(g, mu, reward)
                         found_source = False
                         break
+                    else:
+                        reward = {n: direction_reward_table[(n, q, u)]
+                                  for n in g.nodes_iter()}
+                        mu = update_mu(g, mu, reward)
                     # update mu can be done here also
                 if found_source:
                     assert source == q
                     break
+                else:
+                    # mu[q] = 0  # why this makes things worse?
+                    # mu = normalize_mu(mu)
+                    pass
             else:
                 u = random.choice(g.neighbors(q))
                 queried_nodes.add(u)
@@ -186,7 +200,6 @@ def mwu_by_infection_direction(g,
                 reward = {n: direction_reward_table[(n, ) + tpl]
                           for n in g.nodes_iter()}
             
-                for n in g.nodes_iter():
-                    mu[n] *= reward[n]
-        mu = normalize_mu(mu)
+                mu = update_mu(g, mu, reward)
+
     return len(queried_nodes - obs_nodes)
