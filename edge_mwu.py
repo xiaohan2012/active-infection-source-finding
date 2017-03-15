@@ -173,15 +173,16 @@ def mwu_by_infection_direction(g,
                 for u in g.neighbors(q):
                     queried_nodes.add(u)
                     if infection_times[u] < infection_times[q]:
-                        reward = {n: direction_reward_table[(n, u, q)]
-                                  for n in g.nodes_iter()}
-                        mu = update_mu(g, mu, reward)
+                        # reward = {n: direction_reward_table[(n, u, q)]
+                        #           for n in g.nodes_iter()}
+                        # mu = update_mu(g, mu, reward)
                         found_source = False
                         break
                     else:
-                        reward = {n: direction_reward_table[(n, q, u)]
-                                  for n in g.nodes_iter()}
-                        mu = update_mu(g, mu, reward)
+                        # reward = {n: direction_reward_table[(n, q, u)]
+                        #           for n in g.nodes_iter()}
+                        # mu = update_mu(g, mu, reward)
+                        pass
                     # update mu can be done here also
                 if found_source:
                     assert source == q
