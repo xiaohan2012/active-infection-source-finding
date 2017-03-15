@@ -8,7 +8,7 @@ def setup_module(module):
 
 
 def run_mwu(method, simulated_cascade_summary, partial_cascade):
-    g, s2n_probas, _, _, node2id, id2node = simulated_cascade_summary
+    g, s2n_probas, _, _, _, node2id, id2node = simulated_cascade_summary
     source, obs_nodes, infection_times, tree = partial_cascade
     query_count, mu_list, query_list = main_routine(
         g, node2id, id2node,

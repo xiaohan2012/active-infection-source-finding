@@ -32,6 +32,7 @@ ID2NODE_FILE = 'id2node'
 REWARD_TABLE_NAME = 'edge_reward_tables'
 
 TIMES_FILE_SUFFIX = 'source2times'
+SP_LEN_NAME = 'sp_len'
 
 
 def extract_larges_CC(g):
@@ -52,13 +53,21 @@ def load_data_by_gtype(gtype, size_param_str):
             REWARD_TABLE_NAME), 'rb'))
     except IOError:
         dir_tbl, inf_tbl = None, None
+
+    try:
+        sp_len = pkl.load(open('data/{}/{}/{}.pkl'.format(
+            gtype, size_param_str,
+            SP_LEN_NAME), 'rb'))
+    except IOError:
+        sp_len = None
+        
     time_probas = pkl.load(open('data/{}/{}/{}.pkl'.format(gtype, size_param_str,
                                                            INF_TIME_PROBA_FILE), 'rb'))
     node2id = pkl.load(open('data/{}/{}/{}.pkl'.format(gtype, size_param_str,
                                                        NODE2ID_FILE), 'rb'))
     id2node = pkl.load(open('data/{}/{}/{}.pkl'.format(gtype, size_param_str,
                                                        ID2NODE_FILE), 'rb'))
-    return g, time_probas, dir_tbl, inf_tbl, node2id, id2node
+    return g, time_probas, dir_tbl, inf_tbl, sp_len, node2id, id2node
 
 if __name__ == "__main__":
     import os

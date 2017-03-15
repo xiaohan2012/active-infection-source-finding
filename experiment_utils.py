@@ -38,6 +38,8 @@ def experiment_node_mwu_multiple_rounds(rounds,
 def experiment_edge_mwu_multiple_rounds(g,
                                         query_method,
                                         dir_tbl, inf_tbl,
+                                        sp_len,
+                                        check_neighbor_threshold=0.01,
                                         fraction=0.05,
                                         sampling_method='late_nodes',
                                         rounds=100,
@@ -51,6 +53,8 @@ def experiment_edge_mwu_multiple_rounds(g,
             obs_nodes, infection_times, source,
             direction_reward_table=dir_tbl,
             inf_reward_table=inf_tbl,
+            sp_len=sp_len,
+            check_neighbor_threshold=check_neighbor_threshold,
             max_iter=max_iter,
             save_logs=False)
         counts.append(query_count)
@@ -65,8 +69,6 @@ def experiment_dog_multiple_rounds(rounds, g, fraction, sampling_method):
         c = baseline_dog_tracker(g, obs_nodes, infection_times)
         cnts.append(c)
     return cnts
-
-
 
 
 def counts_to_stat(counts):

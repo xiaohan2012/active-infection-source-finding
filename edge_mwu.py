@@ -1,5 +1,6 @@
 import networkx as nx
 import numpy as np
+import random
 
 from ic import sample_graph_from_infection
 from core import normalize_mu
@@ -53,16 +54,24 @@ def median_node(g, mu, sp_len):
     return min(g.nodes_iter(), key=sum_of_weighted_dist)
 
 
-def mwu_by_infection_direction(g,
-                               query_method,
-                               obs_nodes, infection_times, source,
-                               direction_reward_table,
-                               inf_reward_table,
-                               max_iter=float('inf'),
-                               save_logs=False,
-                               debug=False):
+def mwu_by_infection_direction_old(g,
+                                   query_method,
+                                   obs_nodes, infection_times, source,
+                                   direction_reward_table,
+                                   inf_reward_table,
+                                   sp_len=None,
+                                   max_iter=float('inf'),
+                                   save_logs=False,
+                                   debug=False):
+    """
+    \mu is updated when either:
+    1. the query is uninfected
+    2. query's earlier infected neighbors is found
+       (which means there are other neighbors not used for updating mu)
+    """
     mu = {n: 1 for n in g.nodes_iter()}
-    sp_len = nx.shortest_path_length(g, weight='d')
+    if sp_len is None:
+        sp_len = nx.shortest_path_length(g, weight='d')
     centroids = []
     queried_nodes = set(obs_nodes)
     i = 0
@@ -103,5 +112,81 @@ def mwu_by_infection_direction(g,
             
         for n in g.nodes_iter():
             mu[n] *= reward[n]
+        mu = normalize_mu(mu)
+    return len(queried_nodes - obs_nodes)
+
+
+def mwu_by_infection_direction(g,
+                               query_method,
+                               obs_nodes, infection_times, source,
+                               direction_reward_table,
+                               inf_reward_table,
+                               check_neighbor_threshold=0.01,
+                               max_iter=float('inf'),
+                               save_logs=False,
+                               debug=False):
+    """
+    \mu is updated when:
+
+    1. q is uninfected
+    2. query q's neighbor, u. u's infection does not matter
+
+    In principle, this method should use fewer queries than the above one.
+    """
+    mu = {n: 1 for n in g.nodes_iter()}
+    sp_len = nx.shortest_path_length(g, weight='d')  # can be cached
+    centroids = []
+    queried_nodes = set(obs_nodes)
+    i = 0
+    while i < max_iter:
+        i += 1
+        if len(queried_nodes) == g.number_of_nodes():
+            print("no more queries to go")
+            break
+
+        if query_method == MEDIAN_NODE:
+            q = median_node(g, mu, sp_len)
+        else:
+            raise ValueError('unsuportted methods {}'.format(query_method))
+
+        queried_nodes.add(q)
+        
+        if debug:
+            print('query node: {}'.format(q))
+        
+        if save_logs:
+            centroids.append(q)
+
+        if np.isinf(infection_times[q]):  # uninfected
+            reward = {n: inf_reward_table[(n, q)]
+                      for n in g.nodes_iter()}
+            for n in g.nodes_iter():
+                mu[n] *= reward[n]
+        else:
+            if mu[q] > check_neighbor_threshold:
+                found_source = True
+                for u in g.neighbors(q):
+                    queried_nodes.add(u)
+                    if infection_times[u] < infection_times[q]:
+                        # reward = {n: direction_reward_table[(n, u, q)]
+                        #           for n in g.nodes_iter()}
+                        found_source = False
+                        break
+                    # update mu can be done here also
+                if found_source:
+                    assert source == q
+                    break
+            else:
+                u = random.choice(g.neighbors(q))
+                queried_nodes.add(u)
+                if infection_times[u] < infection_times[q]:
+                    tpl = (u, q)
+                else:
+                    tpl = (q, u)
+                reward = {n: direction_reward_table[(n, ) + tpl]
+                          for n in g.nodes_iter()}
+            
+                for n in g.nodes_iter():
+                    mu[n] *= reward[n]
         mu = normalize_mu(mu)
     return len(queried_nodes - obs_nodes)

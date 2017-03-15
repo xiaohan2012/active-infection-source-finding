@@ -4,7 +4,7 @@ from core import penalty_using_distribution
 
 
 def test_penalty_using_distribution(simulated_cascade_summary):
-    g, s2n_ps, _, _, node2id, _ = simulated_cascade_summary
+    g, s2n_ps, _, _, _, node2id, _ = simulated_cascade_summary
     q = (0, 0)
     o = 0
     n2p = penalty_using_distribution(q, o, s2n_ps, node2id)
@@ -16,7 +16,7 @@ def test_penalty_using_distribution(simulated_cascade_summary):
 
 
 def test_penalty_using_distribution(simulated_cascade_summary):
-    g, s2n_ps, _, _, node2id, _ = simulated_cascade_summary
+    g, s2n_ps, _, _, _, node2id, _ = simulated_cascade_summary
     q = (0, 0)
     i = node2id[q]
     m = s2n_ps[i]
