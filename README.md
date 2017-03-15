@@ -2,7 +2,8 @@
 
 # Todo
 
-- mwu fails to terminate
+- why `edge_mwu` sucks when setting `mu[q]=0` for query node that is not source.
+- when doing neighborhood querying, why updating at each neighbor sucks?
 
 # Todo (optimization)
 
