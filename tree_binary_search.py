@@ -1,4 +1,3 @@
-import random
 import networkx as nx
 import numpy as np
 
@@ -46,7 +45,8 @@ def get_infected_subgraph(g, q, queried_nodes):
     return sg
 
 
-def find_source(g, obs_nodes, infection_times):
+def find_source(g, obs_nodes, infection_times,
+                debug=False):
     # print(infection_times)
     # print(obs_nodes)
     queried_nodes = set(obs_nodes)
@@ -54,20 +54,24 @@ def find_source(g, obs_nodes, infection_times):
     while True:
         q = find_centroid(sg)
         queried_nodes.add(q)
-        print('query', q)
+        if debug:
+            print('query', q)
 
         # uninfected
         if np.isinf(infection_times[q]):
-            print('uninfected')
+            if debug:
+                print('uninfected')
             sg = get_infected_subgraph(sg, q, queried_nodes)
         else:
-            print('nbr', g.neighbors(q))
+            if debug:
+                print('nbr', g.neighbors(q))
             found_source = True
             for n in g.neighbors(q):
                 queried_nodes.add(n)
                 if infection_times[n] < infection_times[q]:
-                    print('earlier nbr', n)
-                    print('their time', infection_times[n], infection_times[q])
+                    if debug:
+                        print('earlier nbr', n)
+                        print('their time', infection_times[n], infection_times[q])
                     found_source = False
                     sg = get_infected_subgraph(sg, q, {n})
                     break
@@ -75,6 +79,8 @@ def find_source(g, obs_nodes, infection_times):
                 true_source = min(infection_times, key=lambda n: infection_times[n])
                 assert q == true_source
                 break
-        print('new subgraph size {}'.format(sg.number_of_nodes()))
-    print(queried_nodes)
+        if debug:
+            print('new subgraph size {}'.format(sg.number_of_nodes()))
+    if debug:
+        print(queried_nodes)
     return len(queried_nodes - obs_nodes)

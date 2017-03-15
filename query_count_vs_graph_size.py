@@ -2,11 +2,14 @@
 import os
 import arrow
 import pandas as pd
+import networkx as nx
 from mwu import (MAX_MU, RANDOM)
 from edge_mwu import MEDIAN_NODE
+from tree_binary_search import find_source as find_source_binary_search
 from synthetic_data import (load_data_by_gtype, all_graph_types)
 from experiment_utils import (experiment_node_mwu_multiple_rounds,
                               experiment_edge_mwu_multiple_rounds,
+                              experiment_multiple_rounds,
                               experiment_dog_multiple_rounds, counts_to_stat)
 
 
@@ -68,6 +71,18 @@ def main(query_methods, n_rounds, gtype, size_params,
             counts = edge_mwu_wrapper(MEDIAN_NODE)
             rows.append(counts_to_stat(counts))
             indices.append((MEDIAN_NODE, g.number_of_nodes()))
+
+        if 'binary_search' in query_methods:
+            if not nx.is_tree(g):
+                raise TypeError('g is not a tree')
+            
+            counts = experiment_multiple_rounds(
+                find_source_binary_search,
+                n_rounds, g,
+                fraction,
+                sampling_method)
+            rows.append(counts_to_stat(counts))
+            indices.append(('binary_search', g.number_of_nodes()))
             
         index = pd.MultiIndex.from_tuples(indices, names=('method', 'graph size'))
         df = pd.DataFrame.from_records(rows, index=index)
@@ -82,7 +97,7 @@ def main(query_methods, n_rounds, gtype, size_params,
 
 
 if __name__ == '__main__':
-    ALL_METHODS = (MAX_MU, RANDOM, MEDIAN_NODE, 'dog')
+    ALL_METHODS = (MAX_MU, RANDOM, MEDIAN_NODE, 'dog', 'binary_search')
 
     import argparse
     

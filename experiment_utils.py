@@ -61,6 +61,22 @@ def experiment_edge_mwu_multiple_rounds(g,
     return counts
 
 
+def experiment_multiple_rounds(source_finding_method, rounds, g, fraction, sampling_method):
+    """source finding method should be given
+    """
+    cnts = []
+    for i in tqdm(range(rounds)):
+        source, obs_nodes, infection_times, tree = make_partial_cascade(
+            g, fraction, sampling_method=sampling_method)
+        try:
+            c = source_finding_method(g, obs_nodes, infection_times)
+            cnts.append(c)
+        except RecursionError:
+            pass
+
+    return cnts
+
+
 def experiment_dog_multiple_rounds(rounds, g, fraction, sampling_method):
     cnts = []
     for i in range(rounds):
@@ -69,6 +85,7 @@ def experiment_dog_multiple_rounds(rounds, g, fraction, sampling_method):
         c = baseline_dog_tracker(g, obs_nodes, infection_times)
         cnts.append(c)
     return cnts
+
 
 
 def counts_to_stat(counts):
