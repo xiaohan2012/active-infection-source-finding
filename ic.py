@@ -76,12 +76,12 @@ def make_partial_cascade(g, fraction, sampling_method='uniform'):
 
 def run_one_round(sampled_g):
     s2t_len = nx.shortest_path_length(sampled_g)
-    return [(s, (n, s2t_len[s].get(n, -1)))
+    return [(s, (n, t))
             for s in s2t_len
-            for n in sampled_g.nodes_iter()]
+            for n, t in s2t_len[s].items()]
 
     
-# @profile
+@profile
 def infection_time_estimation(g, n_rounds, return_node2id=False):
     """
     estimate the infection time distribution
@@ -101,21 +101,40 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
         s2n_times_counter = defaultdict(lambda: defaultdict(int))
         snt_list_list = Parallel(n_jobs=-1)(delayed(run_one_round)(sample_graph_from_infection(g))
                                             for i in range(n_rounds))
+
         df = pd.DataFrame(list(itertools.chain(*snt_list_list)),
                           columns=['source', 'node-time'])
-        df['time'] = [t for _, (_, t) in itertools.chain(*snt_list_list)]
-        n_times = df['time'].max() + 2  # add inf time
-        # print('n_times: {}'.format(n_times))
+
+        times = np.array([t for _, (_, t) in itertools.chain(*snt_list_list)])
+        n_times = times.max() + 2
         d = {}
 
-        for s, sdf in df.groupby('source'):
+        for s, sdf in tqdm(df.groupby('source')):
             counts = sdf['node-time'].value_counts()
-            row, col = zip(*counts.index.tolist())
-            row = [node2id[v] for v in row]
+        
+            row = [r for r, _ in counts.index]
+            col = [c for _, c in counts.index]
+            # row, col = zip(*counts.index.tolist())
+
+            row = np.array([node2id[v] for v in row])
             col = np.array(col)
-            col[col == -1] = n_times-1
-            data = counts.as_matrix() / n_rounds
-            d[node2id[s]] = csr_matrix((data, (row, col)), shape=(g.number_of_nodes(), n_times))
+            
+            # get uninfected counts
+            sum_df = pd.DataFrame.from_dict({'r': row, 'c': counts.as_matrix()})
+            row_sums = sum_df.groupby('r')['c'].sum()
+
+            uninfected_counts = (np.ones(g.number_of_nodes(), dtype=np.float) * n_rounds -
+                                 row_sums.as_matrix())
+            data = np.concatenate((counts.as_matrix(),
+                                   uninfected_counts))
+            data /= n_rounds
+            row = np.concatenate((row,
+                                  np.arange(g.number_of_nodes())))
+            col = np.concatenate((col,
+                                  (n_times-1) * np.ones(g.number_of_nodes())))
+            
+            d[node2id[s]] = csr_matrix((data, (row, col)),
+                                       shape=(g.number_of_nodes(), n_times))
     else:
         # vanilla approach
         # might spend less memory
