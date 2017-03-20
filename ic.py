@@ -95,7 +95,7 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
     """
     node2id = {n: i for i, n in enumerate(g.nodes_iter())}
 
-    if True:
+    if False:
         s2n_times_counter = defaultdict(lambda: defaultdict(int))
         snt_list_list = Parallel(n_jobs=-1)(delayed(run_one_round)(sample_graph_from_infection(g))
                                             for i in range(n_rounds))
@@ -103,7 +103,7 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
                           columns=['source', 'node-time'])
         df['time'] = [t for _, (_, t) in itertools.chain(*snt_list_list)]
         n_times = df['time'].max() + 2  # add inf time
-        print('n_times: {}'.format(n_times))
+        # print('n_times: {}'.format(n_times))
         d = {}
 
         for s, sdf in df.groupby('source'):
