@@ -2,19 +2,19 @@
 
 cmd="python synthetic_data.py"
 
-for e ({6..7}); do
+for e ({2..7}); do
     print grid
     print $e;
     eval ${cmd} -t grid -b 2 -e ${e};
 done
 
-for e ({12..13}); do
+for e ({4..13}); do
     print pl-tree
     print $e
     eval ${cmd} -t pl-tree -b 2 -e ${e};
 done
 
-for e ({10..13}); do
+for e ({6..13}); do
     print er
     print $e
     eval ${cmd} -t er -b 2 -e ${e};
