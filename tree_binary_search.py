@@ -26,11 +26,44 @@ def subtree_size(g, u, v, cache):
     return cache[(u, v)]
 
 
+def subtree_size_iterative(g, i, j, cache):
+    stack = [(i, j)]
+    
+    while len(stack) > 0:
+        u, v = stack[0]
+        u_nbrs = g.neighbors(u)
+        if len(u_nbrs) == 1:
+            assert u_nbrs[0] == v
+            cache[(u, v)] = 1
+            stack.pop(0)
+            continue
+            
+        v_nbrs = g.neighbors(v)
+        if len(v_nbrs) == 1:
+            assert v_nbrs[0] == u
+            cache[(u, v)] = g.number_of_nodes() - 1
+            stack.pop(0)
+            continue
+
+        pushed = False
+        for n in g.neighbors(u):
+            if n != v:
+                if (n, u) not in cache:
+                    pushed = True
+                    stack.insert(0, (n, u))
+        if not pushed:  # every thing ready for u, v
+            cache[(u, v)] = 1 + sum(cache[n, u]
+                                    for n in g.neighbors(u)
+                                    if n != v)
+            stack.pop(0)
+    return cache[(i, j)]
+
+    
 def find_centroid(g):
     cache = {}
     half_size = g.number_of_nodes() / 2
     for u in g.nodes_iter():
-        sizes = np.array([subtree_size(g, n, u, cache)
+        sizes = np.array([subtree_size_iterative(g, n, u, cache)
                           for n in g.neighbors(u)])
         if (sizes <= half_size).all():
             return u

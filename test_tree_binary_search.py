@@ -1,7 +1,8 @@
 import pytest
 import numpy as np
 import networkx as nx
-from tree_binary_search import subtree_size, find_centroid, find_source
+from tree_binary_search import (subtree_size, find_centroid,
+                                find_source, subtree_size_iterative)
 from fixtures import tree_infection
 
 
@@ -48,6 +49,30 @@ def test_subtree_size_star(star):
                      (0, 5): 5, (5, 0): 1}
     
 
+def test_subtree_size_cache_iterative(line_graph):
+    cache = {}
+    for u, v in line_graph.edges_iter():
+        subtree_size_iterative(line_graph, u, v, cache)
+        subtree_size_iterative(line_graph, v, u, cache)
+    assert cache == {(0, 1): 1, (1, 0): 4,
+                     (1, 2): 2, (2, 1): 3,
+                     (2, 3): 3, (3, 2): 2,
+                     (3, 4): 4, (4, 3): 1}
+
+    
+def test_subtree_size_star_iterative(star):
+    cache = {}
+    for u, v in star.edges_iter():
+        subtree_size_iterative(star, u, v, cache)
+        subtree_size_iterative(star, v, u, cache)
+
+    assert cache == {(0, 1): 5, (1, 0): 1,
+                     (0, 2): 5, (2, 0): 1,
+                     (0, 3): 5, (3, 0): 1,
+                     (0, 4): 5, (4, 0): 1,
+                     (0, 5): 5, (5, 0): 1}
+
+    
 def test_find_centroid():
     g = nx.path_graph(10)
     assert find_centroid(g) == 4
