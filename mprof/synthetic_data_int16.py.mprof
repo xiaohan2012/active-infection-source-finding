@@ -1,0 +1,121 @@
+|V|=256, |E|=480
+graph type: grid
+Filename: /home/cloud-user/code/source_finding/ic.py
+
+Line #    Mem usage    Increment   Line Contents
+================================================
+    85   85.516 MiB    0.000 MiB   @profile
+    86                             def infection_time_estimation(g, n_rounds, return_node2id=False):
+    87                                 """
+    88                                 estimate the infection time distribution
+    89                                 n_rounds of cascades for *each* node
+    90                             
+    91                                 Returns:
+    92                                 dict of source to 2D sparse matrices (node to infection time probabilities)
+    93                                     can be viewed as 3D tensor:
+    94                                     N x N x max(t), source to node to infection time
+    95                                     dict source to nodes' infection time distribution
+    96                                 """
+    97   85.516 MiB    0.000 MiB       node2id = {n: i for i, n in enumerate(g.nodes_iter())}
+    98                             
+    99                                 if True:
+   100                                     # parallel and pandas.Dataframe approach
+   101                                     # faster but more memory consuming
+   102   86.371 MiB    0.855 MiB           snt_list_list = Parallel(n_jobs=-1)(delayed(run_one_round)(sample_graph_from_infection(g), node2id)
+   103   91.871 MiB    5.500 MiB                                               for i in range(n_rounds))
+   104                             
+   105  147.770 MiB   55.898 MiB           df = pd.DataFrame(list(itertools.chain(*snt_list_list)),
+   106  147.770 MiB    0.000 MiB                             columns=['source', 'node', 'time'],
+   107  126.043 MiB  -21.727 MiB                             dtype=np.uint16)
+   108                             
+   109  126.156 MiB    0.113 MiB           n_times = df['time'].max() + 2
+   110  126.156 MiB    0.000 MiB           d = {}
+   111                             
+   112  126.457 MiB    0.301 MiB           for s, sdf in tqdm(df.groupby('source')):
+   113  126.457 MiB    0.000 MiB               nt_series = pd.Series([(n, t) for n, t in zip(sdf['node'], sdf['time'])])
+   114  126.457 MiB    0.000 MiB               counts = nt_series.value_counts()
+   115                                     
+   116  126.457 MiB    0.000 MiB               row = [r for r, _ in counts.index]
+   117  126.457 MiB    0.000 MiB               col = [c for _, c in counts.index]
+   118                                         # row, col = zip(*counts.index.tolist())
+   119                             
+   120  126.457 MiB    0.000 MiB               row = np.array(row)
+   121  126.457 MiB    0.000 MiB               col = np.array(col)
+   122                                         
+   123                                         # get uninfected counts
+   124  126.457 MiB    0.000 MiB               sum_df = pd.DataFrame.from_dict({'r': row, 'c': counts.as_matrix()})
+   125  126.457 MiB    0.000 MiB               row_sums = sum_df.groupby('r')['c'].sum()
+   126                             
+   127  126.457 MiB    0.000 MiB               uninfected_counts = (np.ones(g.number_of_nodes(), dtype=np.float) * n_rounds -
+   128  126.457 MiB    0.000 MiB                                    row_sums.as_matrix())
+   129  126.457 MiB    0.000 MiB               data = np.concatenate((counts.as_matrix(),
+   130  126.457 MiB    0.000 MiB                                      uninfected_counts))
+   131  126.457 MiB    0.000 MiB               data /= n_rounds
+   132  126.457 MiB    0.000 MiB               row = np.concatenate((row,
+   133  126.457 MiB    0.000 MiB                                     np.arange(g.number_of_nodes())))
+   134  126.457 MiB    0.000 MiB               col = np.concatenate((col,
+   135  126.457 MiB    0.000 MiB                                     (n_times-1) * np.ones(g.number_of_nodes())))
+   136                                         
+   137  126.457 MiB    0.000 MiB               d[s] = csr_matrix((data, (row, col)),
+   138  126.457 MiB    0.000 MiB                                 shape=(g.number_of_nodes(), n_times))
+   139                                 else:
+   140                                     # vanilla approach
+   141                                     # might spend less memory
+   142                                     s2n_times_counter = defaultdict(lambda: defaultdict(int))
+   143                             
+   144                                     inf = float('inf')
+   145                                     # run in serial to save memory
+   146                                     for i in tqdm(range(n_rounds)):
+   147                                         sampled_g = sample_graph_from_infection(g)
+   148                                         # this is using Dijkstra
+   149                                         # s2t_len = nx.shortest_path_length(sampled_g, weight='d')
+   150                             
+   151                                         # this is serial BFS
+   152                                         s2t_len = nx.shortest_path_length(sampled_g)
+   153                             
+   154                                         # this is parallel BFS (slow)
+   155                                         # results = Parallel(n_jobs=-1)(
+   156                                         #     delayed(nx.single_source_shortest_path_length)(g, n)
+   157                                         #     for n in g.nodes_iter())
+   158                                         # s2t_len = {n: t_len for n, t_len in zip(g.nodes_iter(), results)}
+   159                                         
+   160                                         for s in s2t_len:  # one cascade for each node
+   161                                             for n in sampled_g.nodes_iter():
+   162                                                 s2n_times_counter[(s, n)][s2t_len[s].get(n, inf)] += 1
+   163                             
+   164                                     all_times = np.array([t
+   165                                                           for times_counter in s2n_times_counter.values()
+   166                                                           for t in times_counter.keys()])
+   167                                     all_times = np.ravel(all_times)
+   168                                     unique_values = np.unique(all_times)
+   169                             
+   170                                     min_val, max_val = (int(unique_values.min()),
+   171                                                         int(unique_values[np.invert(np.isinf(unique_values))].max()))
+   172                                     n_times = max_val - min_val + 2
+   173                                     # using dict to 2D sparse matrix because there is no 3D sparse matrix
+   174                                     d = dict()
+   175                                     for s in tqdm(g.nodes_iter()):
+   176                                         i = node2id[s]
+   177                                         row = []  # infected node
+   178                                         col = []  # infection time
+   179                                         data = []  # probabilities
+   180                                         for n in g.nodes_iter():
+   181                                             j = node2id[n]
+   182                                             cnts = s2n_times_counter[(s, n)]
+   183                                             cnts[n_times-1] = cnts[float('inf')]
+   184                                             del cnts[float('inf')]
+   185                                             row += [j] * len(cnts)
+   186                                             col_slice, cnts_list = map(list, zip(*cnts.items()))
+   187                                             col += col_slice
+   188                                             cnts_array = np.array(cnts_list, dtype=np.float)
+   189                                             cnts_array /= cnts_array.sum()
+   190                                             data += cnts_array.tolist()
+   191                             
+   192                                         d[i] = csr_matrix((data, (row, col)), shape=(g.number_of_nodes(), n_times))
+   193                             
+   194  126.457 MiB    0.000 MiB       if return_node2id:
+   195  126.457 MiB    0.000 MiB           return d, node2id
+   196                                 else:
+   197                                     return d
+
+

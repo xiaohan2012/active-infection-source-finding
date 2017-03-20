@@ -1,0 +1,38 @@
+|V|=256, |E|=480
+graph type: grid
+Filename: /home/cloud-user/code/source_finding/ic.py
+
+Line #    Mem usage    Increment   Line Contents
+================================================
+    85   85.121 MiB    0.000 MiB   @profile
+    86                             def infection_time_estimation(g, n_rounds, return_node2id=False):
+    87                                 """
+    88                                 estimate the infection time distribution
+    89                                 n_rounds of cascades for *each* node
+    90                             
+    91                                 Returns:
+    92                                 dict of source to 2D sparse matrices (node to infection time probabilities)
+    93                                     can be viewed as 3D tensor:
+    94                                     N x N x max(t), source to node to infection time
+    95                                     dict source to nodes' infection time distribution
+    96                                 """
+    97   85.121 MiB    0.000 MiB       node2id = {n: i for i, n in enumerate(g.nodes_iter())}
+    98                             
+    99                                 if True:
+   100                                     # parallel and pandas.Dataframe approach
+   101                                     # faster but more memory consuming
+   102   85.121 MiB    0.000 MiB           s2n_times_counter = defaultdict(lambda: defaultdict(int))
+   103   85.965 MiB    0.844 MiB           snt_list_list = Parallel(n_jobs=-1)(delayed(run_one_round)(sample_graph_from_infection(g), node2id)
+   104   94.219 MiB    8.254 MiB                                               for i in range(n_rounds))
+   105                             
+   106  150.387 MiB   56.168 MiB           df = pd.DataFrame(list(itertools.chain(*snt_list_list)),
+   107  128.359 MiB  -22.027 MiB                             columns=['source', 'node', 'time'])
+   108  128.359 MiB    0.000 MiB           del snt_list_list
+   109  180.785 MiB   52.426 MiB           df['node-time'] = [(n, t) for n, t in zip(df['node'], df['time'])]
+   110                             
+   111  180.801 MiB    0.016 MiB           n_times = df['time'].max() + 2
+   112  180.801 MiB    0.000 MiB           d = {}
+   113                             
+   114  204.879 MiB   24.078 MiB           for s, sdf in tqdm(df.groupby('source')):
+   115  204.625 MiB   -0.254 MiB               counts = sdf['node-time'].value_counts()
+   116                                     
