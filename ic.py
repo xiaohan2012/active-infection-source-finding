@@ -2,8 +2,8 @@ import math
 import networkx as nx
 import numpy as np
 import pandas as pd
-import itertools
-from collections import defaultdict, Counter
+import os
+from tempfile import NamedTemporaryFile
 from scipy.sparse import csr_matrix
 from joblib import Parallel, delayed
 from tqdm import tqdm
@@ -74,14 +74,25 @@ def make_partial_cascade(g, fraction, sampling_method='uniform'):
     return source, obs_nodes, infection_times, tree
 
 
-def run_one_round(sampled_g):
-    s2t_len = nx.shortest_path_length(sampled_g)
-    return [(s, (n, t))
-            for s in s2t_len
-            for n, t in s2t_len[s].items()]
+def run_one_round(sampled_g, node2id):
+
+    f = NamedTemporaryFile(mode='w', delete=False)
+    for s in sampled_g.nodes_iter():
+        s2t_len = nx.shortest_path_length(sampled_g, source=s)
+        f.write('\n'.join('{},{},{}'.format(node2id[s], node2id[n], t)
+                          for n, t in s2t_len.items()))
+        f.write('\n')
+    f.close()
+    return f.name
+    
+    # return np.array([np.array([node2id[s], node2id[n], t],
+    #                           dtype=np.uint16)
+    #                  for s in s2t_len
+    #                  for n, t in s2t_len[s].items()],
+    #                 dtype=np.uint16)
 
     
-@profile
+# @profile
 def infection_time_estimation(g, n_rounds, return_node2id=False):
     """
     estimate the infection time distribution
@@ -98,25 +109,30 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
     if True:
         # parallel and pandas.Dataframe approach
         # faster but more memory consuming
-        s2n_times_counter = defaultdict(lambda: defaultdict(int))
-        snt_list_list = Parallel(n_jobs=-1)(delayed(run_one_round)(sample_graph_from_infection(g))
-                                            for i in range(n_rounds))
+        tmp_file_paths = Parallel(n_jobs=-1)(delayed(run_one_round)(sample_graph_from_infection(g), node2id)
+                                             for i in range(n_rounds))
+        dfs = [pd.read_csv(p, sep=',',
+                           names=['source', 'node', 'time'],
+                           dtype=np.uint16)
+               for p in tmp_file_paths]
+        df = pd.concat(dfs, axis=0)
+        del dfs
+        # remove files
+        for p in tmp_file_paths:
+            os.unlink(p)
 
-        df = pd.DataFrame(list(itertools.chain(*snt_list_list)),
-                          columns=['source', 'node-time'])
-
-        times = np.array([t for _, (_, t) in itertools.chain(*snt_list_list)])
-        n_times = times.max() + 2
+        n_times = df['time'].max() + 2
         d = {}
 
         for s, sdf in tqdm(df.groupby('source')):
-            counts = sdf['node-time'].value_counts()
+            nt_series = pd.Series([(n, t) for n, t in zip(sdf['node'], sdf['time'])])
+            counts = nt_series.value_counts()
         
             row = [r for r, _ in counts.index]
             col = [c for _, c in counts.index]
             # row, col = zip(*counts.index.tolist())
 
-            row = np.array([node2id[v] for v in row])
+            row = np.array(row)
             col = np.array(col)
             
             # get uninfected counts
@@ -133,8 +149,8 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
             col = np.concatenate((col,
                                   (n_times-1) * np.ones(g.number_of_nodes())))
             
-            d[node2id[s]] = csr_matrix((data, (row, col)),
-                                       shape=(g.number_of_nodes(), n_times))
+            d[s] = csr_matrix((data, (row, col)),
+                              shape=(g.number_of_nodes(), n_times))
     else:
         # vanilla approach
         # might spend less memory
