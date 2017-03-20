@@ -69,7 +69,8 @@ def load_data_by_gtype(gtype, size_param_str):
                                                        ID2NODE_FILE), 'rb'))
     return g, time_probas, dir_tbl, inf_tbl, sp_len, node2id, id2node
 
-if __name__ == "__main__":
+
+def main():
     import os
     
     p = 0.7
@@ -141,3 +142,6 @@ if __name__ == "__main__":
     id2node = {i: n for n, i in node2id.items()}
     pkl.dump(id2node,
              open('{}/{}.pkl'.format(output_dir, ID2NODE_FILE), 'wb'))
+    
+if __name__ == "__main__":
+    main()

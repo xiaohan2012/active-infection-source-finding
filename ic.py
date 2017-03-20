@@ -1,9 +1,11 @@
 import math
 import networkx as nx
 import numpy as np
+import pandas as pd
+import itertools
 from collections import defaultdict, Counter
-from joblib import Parallel, delayed
 from scipy.sparse import csr_matrix
+from joblib import Parallel, delayed
 from tqdm import tqdm
 
 
@@ -72,6 +74,13 @@ def make_partial_cascade(g, fraction, sampling_method='uniform'):
     return source, obs_nodes, infection_times, tree
 
 
+def run_one_round(sampled_g):
+    s2t_len = nx.shortest_path_length(sampled_g)
+    return [(s, (n, s2t_len[s].get(n, -1)))
+            for s in s2t_len
+            for n in sampled_g.nodes_iter()]
+
+    
 # @profile
 def infection_time_estimation(g, n_rounds, return_node2id=False):
     """
@@ -85,57 +94,79 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
         dict source to nodes' infection time distribution
     """
     node2id = {n: i for i, n in enumerate(g.nodes_iter())}
-    s2n_times_counter = defaultdict(lambda: defaultdict(Counter))
-    inf = float('inf')
-    # run in serial to save memory
-    for i in tqdm(range(n_rounds)):
-        sampled_g = sample_graph_from_infection(g)
-        # this is using Dijkstra
-        # s2t_len = nx.shortest_path_length(sampled_g, weight='d')
 
-        # this is serial BFS
-        s2t_len = nx.shortest_path_length(sampled_g)
+    if True:
+        s2n_times_counter = defaultdict(lambda: defaultdict(int))
+        snt_list_list = Parallel(n_jobs=-1)(delayed(run_one_round)(sample_graph_from_infection(g))
+                                            for i in range(n_rounds))
+        df = pd.DataFrame(list(itertools.chain(*snt_list_list)),
+                          columns=['source', 'node-time'])
+        df['time'] = [t for _, (_, t) in itertools.chain(*snt_list_list)]
+        n_times = df['time'].max() + 2  # add inf time
+        print('n_times: {}'.format(n_times))
+        d = {}
 
-        # this is parallel BFS (slow)
-        # results = Parallel(n_jobs=-1)(
-        #     delayed(nx.single_source_shortest_path_length)(g, n)
-        #     for n in g.nodes_iter())
-        # s2t_len = {n: t_len for n, t_len in zip(g.nodes_iter(), results)}
-        
-        for s in s2t_len:  # one cascade for each node
-            for n in sampled_g.nodes_iter():
-                time = s2t_len[s].get(n, inf)
-                s2n_times_counter[s][n][time] += 1
+        for s, sdf in df.groupby('source'):
+            counts = sdf['node-time'].value_counts()
+            row, col = zip(*counts.index.tolist())
+            row = [node2id[v] for v in row]
+            col = np.array(col)
+            col[col == -1] = n_times-1
+            data = counts.as_matrix() / n_rounds
+            d[node2id[s]] = csr_matrix((data, (row, col)), shape=(g.number_of_nodes(), n_times))
+    else:
+        s2n_times_counter = defaultdict(lambda: defaultdict(int))
 
-    all_times = np.array([t
-                          for n2times_counter in s2n_times_counter.values()
-                          for counter in n2times_counter.values()
-                          for t in counter.keys()])
-    all_times = np.ravel(all_times)
-    unique_values = np.unique(all_times)
+        inf = float('inf')
+        # run in serial to save memory
+        for i in tqdm(range(n_rounds)):
+            sampled_g = sample_graph_from_infection(g)
+            # this is using Dijkstra
+            # s2t_len = nx.shortest_path_length(sampled_g, weight='d')
 
-    min_val, max_val = (int(unique_values.min()),
-                        int(unique_values[np.invert(np.isinf(unique_values))].max()))
-    n_times = max_val - min_val + 2
-    d = dict()
-    for s in tqdm(g.nodes_iter()):
-        i = node2id[s]
-        row = []  # infected node
-        col = []  # infection time
-        data = []  # probabilities
-        for n in g.nodes_iter():
-            j = node2id[n]
-            cnts = s2n_times_counter[s][n]
-            cnts[n_times-1] = cnts[float('inf')]
-            del cnts[float('inf')]
-            row += [j] * len(cnts)
-            col_slice, cnts_list = map(list, zip(*cnts.items()))
-            col += col_slice
-            cnts_array = np.array(cnts_list, dtype=np.float)
-            cnts_array /= cnts_array.sum()
-            data += cnts_array.tolist()
+            # this is serial BFS
+            s2t_len = nx.shortest_path_length(sampled_g)
 
-        d[i] = csr_matrix((data, (row, col)), shape=(g.number_of_nodes(), n_times))
+            # this is parallel BFS (slow)
+            # results = Parallel(n_jobs=-1)(
+            #     delayed(nx.single_source_shortest_path_length)(g, n)
+            #     for n in g.nodes_iter())
+            # s2t_len = {n: t_len for n, t_len in zip(g.nodes_iter(), results)}
+            
+            for s in s2t_len:  # one cascade for each node
+                for n in sampled_g.nodes_iter():
+                    s2n_times_counter[(s, n)][s2t_len[s].get(n, inf)] += 1
+
+        all_times = np.array([t
+                              for times_counter in s2n_times_counter.values()
+                              for t in times_counter.keys()])
+        all_times = np.ravel(all_times)
+        unique_values = np.unique(all_times)
+
+        min_val, max_val = (int(unique_values.min()),
+                            int(unique_values[np.invert(np.isinf(unique_values))].max()))
+        n_times = max_val - min_val + 2
+        # using dict to 2D sparse matrix because there is no 3D sparse matrix
+        d = dict()
+        for s in tqdm(g.nodes_iter()):
+            i = node2id[s]
+            row = []  # infected node
+            col = []  # infection time
+            data = []  # probabilities
+            for n in g.nodes_iter():
+                j = node2id[n]
+                cnts = s2n_times_counter[(s, n)]
+                cnts[n_times-1] = cnts[float('inf')]
+                del cnts[float('inf')]
+                row += [j] * len(cnts)
+                col_slice, cnts_list = map(list, zip(*cnts.items()))
+                col += col_slice
+                cnts_array = np.array(cnts_list, dtype=np.float)
+                cnts_array /= cnts_array.sum()
+                data += cnts_array.tolist()
+
+            d[i] = csr_matrix((data, (row, col)), shape=(g.number_of_nodes(), n_times))
+
     if return_node2id:
         return d, node2id
     else:

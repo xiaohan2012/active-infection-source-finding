@@ -23,7 +23,8 @@ def g_prob():
 def test_line_det(g_det):
     d = infection_time_estimation(g_det, 10)
     assert len(d) == 3
-    for m in d.values():
+    for k, m in d.items():
+        print('source', k)
         assert m.shape == (3, 4)
     for i in range(3):
         for j in range(3):
