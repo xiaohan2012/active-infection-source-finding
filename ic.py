@@ -95,7 +95,9 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
     """
     node2id = {n: i for i, n in enumerate(g.nodes_iter())}
 
-    if False:
+    if True:
+        # parallel and pandas.Dataframe approach
+        # faster but more memory consuming
         s2n_times_counter = defaultdict(lambda: defaultdict(int))
         snt_list_list = Parallel(n_jobs=-1)(delayed(run_one_round)(sample_graph_from_infection(g))
                                             for i in range(n_rounds))
@@ -115,6 +117,8 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
             data = counts.as_matrix() / n_rounds
             d[node2id[s]] = csr_matrix((data, (row, col)), shape=(g.number_of_nodes(), n_times))
     else:
+        # vanilla approach
+        # might spend less memory
         s2n_times_counter = defaultdict(lambda: defaultdict(int))
 
         inf = float('inf')
