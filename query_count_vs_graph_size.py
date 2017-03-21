@@ -1,9 +1,10 @@
 # coding: utf-8
 import os
+import numpy as np
 import arrow
 import pandas as pd
 import networkx as nx
-from mwu import (MAX_MU, RANDOM)
+from mwu import (MAX_MU, RANDOM, RAND_MAX_MU)
 from edge_mwu import MEDIAN_NODE
 from tree_binary_search import find_source as find_source_binary_search
 from synthetic_data import (load_data_by_gtype, all_graph_types)
@@ -22,6 +23,8 @@ def main(query_methods, n_rounds, gtype, size_params,
         print(size_param)
         try:
             g, time_probas, dir_tbl, inf_tbl, sp_len, node2id, id2node = load_data_by_gtype(gtype, size_param)
+            for s, m in time_probas.items():
+                time_probas[s] = m.todense()
         except IOError:
             print('fail to load {}/{}'.format(gtype, size_param))
             break
@@ -54,6 +57,12 @@ def main(query_methods, n_rounds, gtype, size_params,
             rows.append(counts_to_stat(counts))
             indices.append((MAX_MU, g.number_of_nodes()))
 
+        if RAND_MAX_MU in query_methods:
+            print(RAND_MAX_MU)
+            counts = node_mwu_wrapper(RAND_MAX_MU)
+            rows.append(counts_to_stat(counts))
+            indices.append((RAND_MAX_MU, g.number_of_nodes()))
+
         if RANDOM in query_methods:
             print(RANDOM)
             counts = node_mwu_wrapper(RANDOM)
@@ -62,9 +71,11 @@ def main(query_methods, n_rounds, gtype, size_params,
 
         if 'dog' in query_methods:
             print('dog')
-            counts = experiment_dog_multiple_rounds(n_rounds, g, fraction, sampling_method)
-            rows.append(counts_to_stat(counts))
-            indices.append(('dog', g.number_of_nodes()))
+            for f in np.linspace(0, 1, 5):
+                counts = experiment_dog_multiple_rounds(n_rounds, g, fraction, sampling_method,
+                                                        query_fraction=f)
+                rows.append(counts_to_stat(counts))
+                indices.append(('dog-{:.2f}'.format(f), g.number_of_nodes()))
 
         if MEDIAN_NODE in query_methods:
             print(MEDIAN_NODE)
