@@ -27,7 +27,6 @@ def test_line_det(g_det):
     assert d[0].shape == (3, 4)
     assert d[1].shape == (3, 3)
     assert d[2].shape == (3, 4)
-    
     for i in range(3):
         for j in range(3):
             if i == 1:

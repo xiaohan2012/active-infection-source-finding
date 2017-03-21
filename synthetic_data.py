@@ -129,8 +129,8 @@ def main():
     print('graph type: {}'.format(gtype))
     g = add_p_and_delta(g, p, delta)
 
-    time_probas, node2id = infection_time_estimation(g, args.n_rounds,
-                                                     return_node2id=True)
+    time_probas, node2id, id2node = infection_time_estimation(g, args.n_rounds,
+                                                              return_node2id=True)
     
     nx.write_gpickle(g, '{}/graph.gpkl'.format(output_dir, gtype))
 
@@ -139,7 +139,6 @@ def main():
 
     pkl.dump(node2id,
              open('{}/{}.pkl'.format(output_dir, NODE2ID_FILE), 'wb'))
-    id2node = {i: n for n, i in node2id.items()}
     pkl.dump(id2node,
              open('{}/{}.pkl'.format(output_dir, ID2NODE_FILE), 'wb'))
     

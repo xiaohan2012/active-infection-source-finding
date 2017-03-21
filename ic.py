@@ -7,6 +7,7 @@ from tempfile import NamedTemporaryFile
 from scipy.sparse import csr_matrix
 from joblib import Parallel, delayed
 import pickle as pkl
+from gzip import GzipFile
 from tqdm import tqdm
 
 
@@ -115,7 +116,40 @@ def run_for_source(s, sampled_graphs_path, node2id):
     data = np.ones(NT, dtype=np.float) / n_rounds
     return node2id[s], csr_matrix((data, (row, col)),
                                   shape=shape)
-    
+
+
+def run_shortest_path_length(g, id2node):
+    """save 2d distance to tmp file
+    and return the path
+    """
+    n = g.number_of_nodes()
+    f = GzipFile(fileobj=NamedTemporaryFile(mode='ab', delete=False))
+    for i in range(n):
+        s = id2node[i]
+        sp_len = nx.shortest_path_length(g, source=s)
+        f.write(
+            '{}\n'.format(
+                ' '.join(map(str, (sp_len.get(id2node[j], -1) for j in range(n))))).encode('utf-8'))
+    f.close()
+    return f.name
+
+
+def run_for_source_tmp_file(path):
+    """path: the path to tmp file that records source-specific cascade info
+    """
+    m = np.loadtxt(GzipFile(fileobj=open(path, 'rb')))
+    n_cascades, n_nodes = m.shape
+    max_time = m.max() + 2
+    shape = (n_nodes, max_time)
+    row = np.tile(np.arange(n_nodes), n_cascades)
+    col = np.ravel(m)
+    col[col == -1] = max_time - 1
+    data = np.ones(row.shape) / n_cascades
+
+    return csr_matrix((data, (row, col)), shape=shape,
+                      dtype=np.float)
+
+
 def infection_time_estimation(g, n_rounds, return_node2id=False):
     """
     estimate the infection time distribution
@@ -128,10 +162,55 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
         dict source to nodes' infection time distribution
     """
     node2id = {n: i for i, n in enumerate(g.nodes_iter())}
+    id2node = {i: n for i, n in enumerate(g.nodes_iter())}
 
     if True:
+        # in order avoid loading all the sampled graphs
+        # we precompute the shortest path length information for each source
+        # and save them into different files
+        # so that each source computatio only loads what it needs
+        sampled_graphs = Parallel(n_jobs=-1)(delayed(sample_graph_from_infection)(g)
+                                             for i in range(n_rounds))
+        print('calculating shortest path..')
+        
+        sp_len_paths = Parallel(n_jobs=-1)(delayed(run_shortest_path_length)(sg, id2node)
+                                           for sg in tqdm(sampled_graphs))
+        # each temp file corresponds to one source
+        # it records the infection times of the other nodes
+        # each row is a cascade
+        print('dumping shortest path for each source...')
+        temp_path_for_source = []
+        for _ in range(g.number_of_nodes()):
+            f = GzipFile(fileobj=NamedTemporaryFile(mode='ab', delete=False))
+            temp_path_for_source.append(f.name)
+            f.close()  # too many open files error
+        
+        for path in tqdm(sp_len_paths):
+            f = GzipFile(fileobj=open(path, 'rb'))
+            m = np.loadtxt(f)
+            os.unlink(path)
+            f.close()
+
+            nr = m.shape[0]
+            for i in range(nr):
+                path1 = temp_path_for_source[i]
+                f1 = GzipFile(fileobj=open(path1, 'ab'))
+                f1.write('{}\n'.format(' '.join(map(str, m[i, :]))).encode('utf-8'))
+                f1.close()
+
+        print('gathering stat..')
+        csr_marices = Parallel(n_jobs=-1)(delayed(run_for_source_tmp_file)(p)
+                                          for p in tqdm(temp_path_for_source))
+
+        d = {s: m for s, m in enumerate(csr_marices)}
+
+        for p in temp_path_for_source:
+            os.unlink(p)
+    elif False:
         # paralel for each source
         # more memory saving
+        # however, each process needs to load all the sampled graphs,
+        # which is memory consuming
         sampled_graphs = Parallel(n_jobs=-1)(delayed(sample_graph_from_infection)(g)
                                              for i in range(n_rounds))
 
@@ -253,6 +332,6 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
             d[i] = csr_matrix((data, (row, col)), shape=(g.number_of_nodes(), n_times))
 
     if return_node2id:
-        return d, node2id
+        return d, node2id, id2node
     else:
         return d

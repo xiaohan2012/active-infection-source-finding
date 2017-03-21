@@ -178,3 +178,9 @@ Penalty definition: `abs(hmean - outcome)`
 - `networkx` `nodes\_iter` and `Parallel`
    - the `nodes\_iter` order is inconsistent with and without Parallel
 
+
+# preprocessing issue
+
+# parallel processing for large graph
+
+- each job just load what it needs. Otherwise, data loading can be time consuming
