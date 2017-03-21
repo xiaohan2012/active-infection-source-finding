@@ -6,6 +6,7 @@ import os
 from tempfile import NamedTemporaryFile
 from scipy.sparse import csr_matrix
 from joblib import Parallel, delayed
+import pickle as pkl
 from tqdm import tqdm
 
 
@@ -90,9 +91,37 @@ def run_one_round(sampled_g, node2id):
     #                  for s in s2t_len
     #                  for n, t in s2t_len[s].items()],
     #                 dtype=np.uint16)
-
-    
 # @profile
+def run_for_source(s, sampled_graphs_path, node2id):
+    """return:
+    sparse matrix N by t_{max}+2, t_{max} is the maximum time.
+    """
+    sampled_graphs = pkl.load(open(sampled_graphs_path, 'rb'))
+    n_rounds = len(sampled_graphs)
+    n_nodes = sampled_graphs[0].number_of_nodes()
+    NT = n_rounds * n_nodes
+    
+    col = np.empty(0, dtype=np.int16)
+    for g in sampled_graphs:
+        sp_len = nx.shortest_path_length(g, source=s)
+        col = np.concatenate((col,
+                             np.array([sp_len.get(n, -1)
+                                       for n in g.nodes_iter()],
+                                      dtype=np.int16)))
+    col = np.array(col, dtype=np.int16)
+    max_time = col.max()
+    col[col == -1] = max_time + 1
+    shape = (n_nodes, max_time + 2)
+
+    row = np.array([node2id[n]
+                    for g in sampled_graphs
+                    for n in g.nodes_iter()],
+                   dtype=np.uint16)
+    data = np.ones(NT, dtype=np.float) / n_rounds
+    return s, csr_matrix((data, (row, col)),
+                         shape=shape)
+    
+
 def infection_time_estimation(g, n_rounds, return_node2id=False):
     """
     estimate the infection time distribution
@@ -107,6 +136,29 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
     node2id = {n: i for i, n in enumerate(g.nodes_iter())}
 
     if True:
+        # paralel for each source
+        # more memory saving
+        sampled_graphs = Parallel(n_jobs=-1)(delayed(sample_graph_from_infection)(g)
+                                             for i in range(n_rounds))
+        f = NamedTemporaryFile(mode='wb', delete=False)
+        
+        pkl.dump(sampled_graphs, f)
+        f.close()
+        sampled_graphs_path = f.name
+
+        if True:
+            # parallel
+            s2csr_matrix = Parallel(n_jobs=-1)(
+                delayed(run_for_source)(s, sampled_graphs_path, node2id)
+                for s in tqdm(g.nodes_iter()))
+            d = {s: m for s, m in s2csr_matrix}
+        else:
+            # serial
+            d = {}
+            for s in tqdm(g.nodes_iter()):
+                d[s] = run_for_source(s, sampled_graphs_path, node2id)
+        os.unlink(sampled_graphs_path)
+    elif False:
         # parallel and pandas.Dataframe approach
         # faster but more memory consuming
         tmp_file_paths = Parallel(n_jobs=-1)(delayed(run_one_round)(sample_graph_from_infection(g), node2id)
