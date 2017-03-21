@@ -5,7 +5,7 @@ from ic import make_partial_cascade
 from mwu import main_routine as mwu
 from edge_mwu import mwu_by_infection_direction
 from tqdm import tqdm
-from baselines import baseline_dog_tracker
+from baselines import random_dog
 
 
 def experiment_node_mwu_multiple_rounds(rounds,
@@ -77,15 +77,15 @@ def experiment_multiple_rounds(source_finding_method, rounds, g, fraction, sampl
     return cnts
 
 
-def experiment_dog_multiple_rounds(rounds, g, fraction, sampling_method):
+def experiment_dog_multiple_rounds(rounds, g, fraction, sampling_method,
+                                   query_fraction):
     cnts = []
     for i in range(rounds):
         source, obs_nodes, infection_times, tree = make_partial_cascade(
             g, fraction, sampling_method=sampling_method)
-        c = baseline_dog_tracker(g, obs_nodes, infection_times)
+        c = random_dog(g, obs_nodes, infection_times, query_fraction)
         cnts.append(c)
     return cnts
-
 
 
 def counts_to_stat(counts):

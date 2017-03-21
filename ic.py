@@ -86,11 +86,6 @@ def run_one_round(sampled_g, node2id):
     f.close()
     return f.name
     
-    # return np.array([np.array([node2id[s], node2id[n], t],
-    #                           dtype=np.uint16)
-    #                  for s in s2t_len
-    #                  for n, t in s2t_len[s].items()],
-    #                 dtype=np.uint16)
 # @profile
 def run_for_source(s, sampled_graphs_path, node2id):
     """return:
@@ -119,9 +114,8 @@ def run_for_source(s, sampled_graphs_path, node2id):
                    dtype=np.uint16)
     data = np.ones(NT, dtype=np.float) / n_rounds
     return node2id[s], csr_matrix((data, (row, col)),
-                         shape=shape)
+                                  shape=shape)
     
-
 def infection_time_estimation(g, n_rounds, return_node2id=False):
     """
     estimate the infection time distribution
@@ -140,8 +134,8 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
         # more memory saving
         sampled_graphs = Parallel(n_jobs=-1)(delayed(sample_graph_from_infection)(g)
                                              for i in range(n_rounds))
+
         f = NamedTemporaryFile(mode='wb', delete=False)
-        
         pkl.dump(sampled_graphs, f)
         f.close()
         sampled_graphs_path = f.name
