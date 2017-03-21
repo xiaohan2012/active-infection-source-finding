@@ -25,7 +25,7 @@ def accuracy_for_nodes(query, outcome, times_by_source=None, node2id=None):
         acc[s] = np.count_nonzero(m[:, id_] == outcome) / m.shape[0]
     return acc
 
-
+# @profile
 def penalty_using_distribution(query, outcome, s2n_probas, node2id):
     """
     Penalty calcualted from the infection time distribution

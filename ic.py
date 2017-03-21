@@ -118,7 +118,7 @@ def run_for_source(s, sampled_graphs_path, node2id):
                     for n in g.nodes_iter()],
                    dtype=np.uint16)
     data = np.ones(NT, dtype=np.float) / n_rounds
-    return s, csr_matrix((data, (row, col)),
+    return node2id[s], csr_matrix((data, (row, col)),
                          shape=shape)
     
 

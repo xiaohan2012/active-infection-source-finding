@@ -2,16 +2,18 @@ import random
 import networkx as nx
 import numpy as np
 from copy import copy
+from scipy.sparse import issparse
 from core import normalize_mu, print_nodes_by_mu, penalty_using_distribution
 from query_strategy import centroid, maximal_adversarial_query
 
 
 RANDOM = 'random'
 MAX_MU = 'max_mu'
+RAND_MAX_MU = 'rand_max_mu'
 MAX_ADV = 'max_adversarial'
 CENTROID = 'by_centroid'
 
-
+# @profile
 def main_routine(g, node2id, id2node,
                  source, obs_nodes, infection_times,
                  s2n_probas,
@@ -34,6 +36,10 @@ def main_routine(g, node2id, id2node,
 
     Returns False if fails to find the source
     """
+    if issparse(next(iter(s2n_probas.values()))):
+        for s, m in s2n_probas.items():
+            s2n_probas[s] = m.todense()
+        
     if query_selection_method == CENTROID:
         sp_len = nx.shortest_path_length(g, weight='d')
     obs_nodes = copy(obs_nodes)
@@ -78,6 +84,11 @@ def main_routine(g, node2id, id2node,
             q = random.choice(list(all_nodes))
         elif query_selection_method == MAX_MU:
             q = max(all_nodes, key=lambda n: mu[n])
+        elif query_selection_method == RAND_MAX_MU:
+            node_ids = [node2id[n] for n in all_nodes]
+            weights = [mu[n] for n in all_nodes]
+            q_id = np.random.choice(node_ids, size=1, p=weights)[0]
+            q = id2node[q_id]
         elif query_selection_method == MAX_ADV:
             mu_array = np.zeros(g.number_of_nodes())
             for n, val in mu.items():
@@ -93,7 +104,10 @@ def main_routine(g, node2id, id2node,
         elif query_selection_method == CENTROID:
             q = centroid(queryable, g, mu, sp_len)
         else:
-            raise ValueError('available query methods are {}'.format(RANDOM, MAX_MU, CENTROID))
+            raise ValueError('available query methods are {}'.format(RANDOM,
+                                                                     MAX_MU,
+                                                                     CENTROID,
+                                                                     RAND_MAX_MU))
     
         queried_nodes.add(q)
 
@@ -130,7 +144,7 @@ def main_routine(g, node2id, id2node,
                 break
             else:
                 mu[s] = 0  # important
-            
+                mu = normalize_mu(mu)
         if debug:
             print('iteration: {}'.format(iter_i))
             print_nodes_by_mu(g, mu, source)
@@ -144,3 +158,24 @@ def main_routine(g, node2id, id2node,
     else:
         return False
 
+if __name__ == '__main__':
+    import sys
+    from synthetic_data import load_data_by_gtype
+    from ic import make_partial_cascade
+    g, time_probas, _, _, _, node2id, id2node = load_data_by_gtype(sys.argv[1], sys.argv[2])
+    if len(sys.argv) > 3:
+        method = sys.argv[3]
+    else:
+        method = MAX_MU
+    source, obs_nodes, infection_times, tree = make_partial_cascade(g, 0.05, 'late_nodes')
+    
+    query_count = main_routine(g, node2id, id2node,
+                               source, obs_nodes, infection_times,
+                               time_probas,
+                               epsilon=0.7,
+                               check_neighbor_threshold=0.1,
+                               query_selection_method=method,
+                               max_iter=float('inf'),
+                               debug=False,
+                               save_log=False)
+    print('query count: {}'.format(query_count))

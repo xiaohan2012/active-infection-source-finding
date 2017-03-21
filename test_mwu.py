@@ -1,6 +1,6 @@
 import numpy as np
 from fixtures import simulated_cascade_summary, partial_cascade
-from mwu import main_routine, MAX_MU, MAX_ADV
+from mwu import main_routine, MAX_MU, MAX_ADV, RAND_MAX_MU
 
 
 def setup_module(module):
@@ -29,3 +29,10 @@ def test_mwc_max_mu(simulated_cascade_summary, partial_cascade):
     assert len(mu_list) > 5
     assert len(query_list) > 5
     
+
+def test_mwc_rand_max_mu(simulated_cascade_summary, partial_cascade):
+    query_count, mu_list, query_list = run_mwu(
+        RAND_MAX_MU, simulated_cascade_summary, partial_cascade)
+    assert query_count == 18
+    assert len(mu_list) > 5
+    assert len(query_list) > 5
