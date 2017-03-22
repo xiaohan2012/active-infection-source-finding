@@ -162,9 +162,10 @@ def tranpose_3d_tensor(path, temp_path_for_source):
         fcntl.flock(f1, fcntl.LOCK_EX)
 
         f1.write(f.readline())
+        f1.close()
 
         fcntl.flock(f1, fcntl.LOCK_UN)
-        f1.close()
+
     os.unlink(f.name)
     f.close()
 
