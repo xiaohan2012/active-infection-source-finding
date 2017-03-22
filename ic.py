@@ -1,6 +1,5 @@
 import math
 import networkx as nx
-import random
 import numpy as np
 import pandas as pd
 import os
@@ -127,7 +126,7 @@ def run_shortest_path_length(g, id2node):
     """
     n = g.number_of_nodes()
     f = GzipFile(fileobj=NamedTemporaryFile(mode='ab', delete=False))
-    for i in range(n):
+    for i in np.arange(n):
         s = id2node[i]
         sp_len = nx.shortest_path_length(g, source=s)
         f.write(
@@ -140,7 +139,8 @@ def run_shortest_path_length(g, id2node):
 def run_for_source_tmp_file(path):
     """path: the path to tmp file that records source-specific cascade info
     """
-    with GzipFile(path, 'rb') as f:
+    # with GzipFile(path, 'rb') as f:
+    with open(path, 'rb') as f:    
         m = np.loadtxt(f)
     n_cascades, n_nodes = m.shape
     max_time = m.max() + 2
@@ -156,10 +156,11 @@ def run_for_source_tmp_file(path):
 
 def tranpose_3d_tensor(path, temp_paths_for_source):
     with GzipFile(path, 'rb') as f:
-        for line, path1 in zip(f, temp_paths_for_source):
-            with GzipFile(path1, 'ab') as out_file:
+        for l, path_for_source in zip(f, temp_paths_for_source):
+            # with GzipFile(path_for_source, 'ab') as out_file:
+            with open(path_for_source, 'ab') as out_file:
                 fcntl.flock(out_file, fcntl.LOCK_EX)
-                out_file.write(line)
+                out_file.write(l)
                 fcntl.flock(out_file, fcntl.LOCK_UN)
         os.unlink(f.name)
 
@@ -224,13 +225,14 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
             #     f.close()
 
         print('gathering stat..')
-        csr_marices = Parallel(n_jobs=-1, verbose=100)(delayed(run_for_source_tmp_file)(p)
-                                                       for p in tqdm(temp_paths_for_source))
+        csr_marices = Parallel(n_jobs=-1)(delayed(run_for_source_tmp_file)(p)
+                                          for p in tqdm(temp_paths_for_source))
 
         d = {s: m for s, m in enumerate(csr_marices)}
 
         for p in temp_paths_for_source:
             os.unlink(p)
+
     elif False:
         # paralel for each source
         # more memory saving

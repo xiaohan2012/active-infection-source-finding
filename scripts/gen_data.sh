@@ -2,7 +2,7 @@
 
 cmd="python synthetic_data.py"
 
-for e ({6..7}); do
+for e (7); do
     print grid
     print $e;
     eval ${cmd} -t grid -b 2 -e ${e};

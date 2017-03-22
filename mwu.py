@@ -2,7 +2,8 @@ import random
 import networkx as nx
 import numpy as np
 from copy import copy
-from scipy.sparse import issparse
+from scipy.sparse import isspmatrix_csr
+from tqdm import tqdm
 from core import normalize_mu, print_nodes_by_mu, penalty_using_distribution
 from query_strategy import centroid, maximal_adversarial_query
 
@@ -36,9 +37,9 @@ def main_routine(g, node2id, id2node,
 
     Returns False if fails to find the source
     """
-    if issparse(next(iter(s2n_probas.values()))):
-        for s, m in s2n_probas.items():
-            s2n_probas[s] = m.todense()
+    if isspmatrix_csr(next(iter(s2n_probas.values()))):
+        for s, m in tqdm(s2n_probas.items()):
+            s2n_probas[s] = m.tolil()
         
     if query_selection_method == CENTROID:
         sp_len = nx.shortest_path_length(g, weight='d')

@@ -24,7 +24,7 @@ def main(query_methods, n_rounds, gtype, size_params,
         try:
             g, time_probas, dir_tbl, inf_tbl, sp_len, node2id, id2node = load_data_by_gtype(gtype, size_param)
             for s, m in time_probas.items():
-                time_probas[s] = m.todense()
+                time_probas[s] = m.tolil()
         except IOError:
             print('fail to load {}/{}'.format(gtype, size_param))
             break
@@ -108,7 +108,7 @@ def main(query_methods, n_rounds, gtype, size_params,
 
 
 if __name__ == '__main__':
-    ALL_METHODS = (MAX_MU, RANDOM, MEDIAN_NODE, 'dog', 'binary_search')
+    ALL_METHODS = (MAX_MU, RAND_MAX_MU, RANDOM, MEDIAN_NODE, 'dog', 'binary_search')
 
     import argparse
     

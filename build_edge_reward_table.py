@@ -20,7 +20,7 @@ def build_reward_table(g, n_rounds=100):
     tbl1 = defaultdict(float)
     tbl2 = defaultdict(float)
     increase = 1 / n_rounds
-    for i in tqdm(range(n_rounds)):
+    for i in tqdm(range(n_rounds)):  # can be parallelized here
         sampled_g = sample_graph_from_infection(g)
         sp_path = nx.shortest_path(sampled_g)
         for s in g.nodes_iter():
@@ -28,7 +28,7 @@ def build_reward_table(g, n_rounds=100):
                 try:
                     path = sp_path[s][q]
                     if len(path) >= 2:
-                        tbl1[(s, path[-2], q)] += increase
+                        tbl1[(s, path[-2], q)] += increase  # size N x N x (max_degree)
                 except KeyError:
                     tbl2[(s, q)] += increase
     return tbl1, tbl2

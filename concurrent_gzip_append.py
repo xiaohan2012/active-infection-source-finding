@@ -3,8 +3,8 @@ import fcntl
 from joblib import Parallel, delayed
 from tqdm import tqdm
 
-M = 4096
-N = 4096
+M = 4096*4
+N = 4096*4
 D = 100
 s = '11 '
 
