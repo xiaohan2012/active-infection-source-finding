@@ -157,14 +157,10 @@ def tranpose_3d_tensor(path, temp_path_for_source):
     
     for i in range(len(temp_path_for_source)):
         path1 = temp_path_for_source[i]
-        f1 = GzipFile(fileobj=open(path1, 'ab'))
-
-        fcntl.flock(f1, fcntl.LOCK_EX)
-
-        f1.write(f.readline())
-        f1.close()
-
-        fcntl.flock(f1, fcntl.LOCK_UN)
+        with GzipFile(fileobj=open(path1, 'ab')) as f1:
+            fcntl.flock(f1, fcntl.LOCK_EX)
+            f1.write(f.readline())
+            fcntl.flock(f1, fcntl.LOCK_UN)
 
     os.unlink(f.name)
     f.close()
