@@ -139,7 +139,8 @@ def run_shortest_path_length(g, id2node):
 def run_for_source_tmp_file(path):
     """path: the path to tmp file that records source-specific cascade info
     """
-    m = np.loadtxt(GzipFile(fileobj=open(path, 'rb')))
+    with GzipFile(fileobj=open(path, 'rb')) as f:
+        m = np.loadtxt(f)
     n_cascades, n_nodes = m.shape
     max_time = m.max() + 2
     shape = (n_nodes, max_time)
