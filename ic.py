@@ -154,16 +154,15 @@ def run_for_source_tmp_file(path):
                       dtype=np.float)
 
 
-def tranpose_3d_tensor(path, temp_path_for_source):
-    f = GzipFile(path, 'rb')
-    for path1 in temp_path_for_source:
-        with GzipFile(path1, 'ab') as f1:
-            fcntl.flock(f1, fcntl.LOCK_EX)
-            f1.write(f.readline())
-            fcntl.flock(f1, fcntl.LOCK_UN)
+def tranpose_3d_tensor(path, temp_paths_for_source):
+    with GzipFile(path, 'rb') as f:
+        for line, path1 in zip(f, temp_paths_for_source):
+            with GzipFile(path1, 'ab') as out_file:
+                fcntl.flock(out_file, fcntl.LOCK_EX)
+                out_file.write(line)
+                fcntl.flock(out_file, fcntl.LOCK_UN)
+        os.unlink(f.name)
 
-    os.unlink(f.name)
-    f.close()
 
 # @profile
 def infection_time_estimation(g, n_rounds, return_node2id=False):
@@ -206,34 +205,31 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
             r = subprocess.call(['./scripts/transpose_3d_tensor.sh'])
             print("--- {} seconds ---".format((time.time() - start_time)))
             assert r == 0
-            temp_path_for_source = list(sorted(glob('/tmp/x*.gz')))
+            temp_paths_for_source = list(sorted(glob('/tmp/x*.gz')))
         else:
-            temp_path_for_source = []
-            for _ in range(g.number_of_nodes()):
-                f = GzipFile(fileobj=NamedTemporaryFile(mode='ab', delete=False))
-                temp_path_for_source.append(f.name)
-                f.close()  # too many open files error
+            temp_paths_for_source = ['/tmp/s-{}'.format(i)
+                                     for i in range(g.number_of_nodes())]
 
-            Parallel(n_jobs=-1)(delayed(tranpose_3d_tensor)(path, temp_path_for_source)
+            Parallel(n_jobs=-1)(delayed(tranpose_3d_tensor)(path, temp_paths_for_source)
                                 for path in tqdm(sp_len_paths))
             # for path in tqdm(sp_len_paths):
             #     f = GzipFile(fileobj=open(path, 'rb'))
 
             #     for i in range(g.number_of_nodes()):
             #         path1 = temp_path_for_source[i]
-            #         f1 = GzipFile(fileobj=open(path1, 'ab'))
-            #         f1.write(f.readline())
-            #         f1.close()
+            #         out_file = GzipFile(fileobj=open(path1, 'ab'))
+            #         out_file.write(f.readline())
+            #         out_file.close()
             #     os.unlink(f.name)
             #     f.close()
 
         print('gathering stat..')
         csr_marices = Parallel(n_jobs=-1, verbose=100)(delayed(run_for_source_tmp_file)(p)
-                                                       for p in tqdm(temp_path_for_source))
+                                                       for p in tqdm(temp_paths_for_source))
 
         d = {s: m for s, m in enumerate(csr_marices)}
 
-        for p in temp_path_for_source:
+        for p in temp_paths_for_source:
             os.unlink(p)
     elif False:
         # paralel for each source
