@@ -184,3 +184,4 @@ Penalty definition: `abs(hmean - outcome)`
 # parallel processing for large graph
 
 - each job just load what it needs. Otherwise, data loading can be time consuming
+- parallel appending to the same file is fine. When the appended content is small (under `PIPE_BUF`), [no need to use file lock](http://stackoverflow.com/questions/1154446/is-file-append-atomic-in-unix)
