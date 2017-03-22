@@ -3,10 +3,12 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import os
+import pickle as pkl
+import fcntl
 from tempfile import NamedTemporaryFile
 from scipy.sparse import csr_matrix
 from joblib import Parallel, delayed
-import pickle as pkl
+from glob import glob
 from gzip import GzipFile
 from tqdm import tqdm
 
@@ -150,6 +152,23 @@ def run_for_source_tmp_file(path):
                       dtype=np.float)
 
 
+def tranpose_3d_tensor(path, temp_path_for_source):
+    f = GzipFile(fileobj=open(path, 'rb'))
+    
+    for i in range(len(temp_path_for_source)):
+        path1 = temp_path_for_source[i]
+        f1 = GzipFile(fileobj=open(path1, 'ab'))
+
+        fcntl.flock(f1, fcntl.LOCK_EX)
+
+        f1.write(f.readline())
+
+        fcntl.flock(f1, fcntl.LOCK_UN)
+        f1.close()
+    os.unlink(f.name)
+    f.close()
+
+# @profile
 def infection_time_estimation(g, n_rounds, return_node2id=False):
     """
     estimate the infection time distribution
@@ -175,28 +194,41 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
         
         sp_len_paths = Parallel(n_jobs=-1)(delayed(run_shortest_path_length)(sg, id2node)
                                            for sg in tqdm(sampled_graphs))
+        with open('/tmp/sp_len_paths', 'w') as f:
+            for p in sp_len_paths:
+                f.write(p + '\n')
+        
         # each temp file corresponds to one source
         # it records the infection times of the other nodes
         # each row is a cascade
         print('dumping shortest path for each source...')
-        temp_path_for_source = []
-        for _ in range(g.number_of_nodes()):
-            f = GzipFile(fileobj=NamedTemporaryFile(mode='ab', delete=False))
-            temp_path_for_source.append(f.name)
-            f.close()  # too many open files error
-        
-        for path in tqdm(sp_len_paths):
-            f = GzipFile(fileobj=open(path, 'rb'))
-            m = np.loadtxt(f)
-            os.unlink(path)
-            f.close()
+        if False:
+            import time
+            import subprocess
+            start_time = time.time()
+            r = subprocess.call(['./scripts/transpose_3d_tensor.sh'])
+            print("--- {} seconds ---".format((time.time() - start_time)))
+            assert r == 0
+            temp_path_for_source = list(sorted(glob('/tmp/x*.gz')))
+        else:
+            temp_path_for_source = []
+            for _ in range(g.number_of_nodes()):
+                f = GzipFile(fileobj=NamedTemporaryFile(mode='ab', delete=False))
+                temp_path_for_source.append(f.name)
+                f.close()  # too many open files error
 
-            nr = m.shape[0]
-            for i in range(nr):
-                path1 = temp_path_for_source[i]
-                f1 = GzipFile(fileobj=open(path1, 'ab'))
-                f1.write('{}\n'.format(' '.join(map(str, m[i, :]))).encode('utf-8'))
-                f1.close()
+            Parallel(n_jobs=-1)(delayed(tranpose_3d_tensor)(path, temp_path_for_source)
+                                for path in tqdm(sp_len_paths))
+            # for path in tqdm(sp_len_paths):
+            #     f = GzipFile(fileobj=open(path, 'rb'))
+
+            #     for i in range(g.number_of_nodes()):
+            #         path1 = temp_path_for_source[i]
+            #         f1 = GzipFile(fileobj=open(path1, 'ab'))
+            #         f1.write(f.readline())
+            #         f1.close()
+            #     os.unlink(f.name)
+            #     f.close()
 
         print('gathering stat..')
         csr_marices = Parallel(n_jobs=-1)(delayed(run_for_source_tmp_file)(p)
