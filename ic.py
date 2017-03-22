@@ -1,5 +1,6 @@
 import math
 import networkx as nx
+import random
 import numpy as np
 import pandas as pd
 import os
@@ -139,7 +140,7 @@ def run_shortest_path_length(g, id2node):
 def run_for_source_tmp_file(path):
     """path: the path to tmp file that records source-specific cascade info
     """
-    with GzipFile(fileobj=open(path, 'rb')) as f:
+    with GzipFile(path, 'rb') as f:
         m = np.loadtxt(f)
     n_cascades, n_nodes = m.shape
     max_time = m.max() + 2
@@ -154,11 +155,9 @@ def run_for_source_tmp_file(path):
 
 
 def tranpose_3d_tensor(path, temp_path_for_source):
-    f = GzipFile(fileobj=open(path, 'rb'))
-    
-    for i in range(len(temp_path_for_source)):
-        path1 = temp_path_for_source[i]
-        with GzipFile(fileobj=open(path1, 'ab')) as f1:
+    f = GzipFile(path, 'rb')
+    for path1 in temp_path_for_source:
+        with GzipFile(path1, 'ab') as f1:
             fcntl.flock(f1, fcntl.LOCK_EX)
             f1.write(f.readline())
             fcntl.flock(f1, fcntl.LOCK_UN)
@@ -229,8 +228,8 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
             #     f.close()
 
         print('gathering stat..')
-        csr_marices = Parallel(n_jobs=-1)(delayed(run_for_source_tmp_file)(p)
-                                          for p in tqdm(temp_path_for_source))
+        csr_marices = Parallel(n_jobs=-1, verbose=100)(delayed(run_for_source_tmp_file)(p)
+                                                       for p in tqdm(temp_path_for_source))
 
         d = {s: m for s, m in enumerate(csr_marices)}
 
