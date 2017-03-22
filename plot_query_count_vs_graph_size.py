@@ -5,32 +5,31 @@ import os
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+from cycler import cycler
 from synthetic_data import PL_TREE
 
 
 def main(gtype, base=2):
+    plt.style.use('fivethirtyeight')
+    plt.rc('axes', prop_cycle=(cycler('color', ['r', 'g', 'b', 'y'] * 2) +
+                               cycler('linestyle', ['-', '--', ':', '-.'] + list(reversed(['-', '--', ':', '-.']))) +
+                               cycler('marker', ['o', 'v', 's', '*', 's', '*', 'o', 'v'])
+    ))
+
     df = pd.read_pickle('data/{}/performance.pkl'.format(gtype))
-    fig, ax = plt.subplots(1, 1)
+    fig, ax = plt.subplots(1, 1, figsize=(10, 8))
     methods, x = df.index.levels
     methods, x = methods.tolist(), x.tolist()
-    for m in methods:
+    for m in sorted(methods):
         if gtype == PL_TREE and m == 'random':
             continue
 
         y = df['50%'][m].fillna(0).tolist()
         lb = df['25%'][m].fillna(0).tolist()
         ub = df['75%'][m].fillna(0).tolist()
-        
-        print(m)
-        if len(x) > len(y):
-            print('warning: different lengths')
-            x = x[:len(y)]
-            # y += [0] * (len(x) - len(y))
-            # lb += [0] * (len(x) - len(y))
-            # ub += [0] * (len(x) - len(y))
 
-        print(len(x), len(y), len(lb), len(ub))
-        ax.errorbar(x, y, yerr=np.array([lb, ub]), fmt='o-')
+        # ax.errorbar(x, y, yerr=np.array([lb, ub]))
+        ax.plot(x, y, markersize=12)
         ax.set_xscale("log", nonposx='clip', basex=base)
         ax.set_xlim(np.min(list(x))-1, np.max(list(x))+1)
         ax.set_xlabel('graph size')
