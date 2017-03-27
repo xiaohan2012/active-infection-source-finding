@@ -2,6 +2,7 @@
 import argparse
 import pickle as pkl
 import networkx as nx
+import numpy as np
 from networkx.generators.random_graphs import random_powerlaw_tree
 from graph_generator import kronecker_random_graph, grid_2d, \
     P_peri ,P_hier, P_rand, add_p_and_delta
@@ -55,9 +56,9 @@ def load_data_by_gtype(gtype, size_param_str):
         dir_tbl, inf_tbl = None, None
 
     try:
-        sp_len = pkl.load(open('data/{}/{}/{}.pkl'.format(
+        sp_len = np.load('data/{}/{}/{}.npz.npy'.format(
             gtype, size_param_str,
-            SP_LEN_NAME), 'rb'))
+            SP_LEN_NAME))
     except IOError:
         sp_len = None
 
@@ -130,24 +131,28 @@ def main():
     g.remove_edges_from(g.selfloop_edges())
     print('|V|={}, |E|={}'.format(g.number_of_nodes(), g.number_of_edges()))
 
+    g = nx.convert_node_labels_to_integers(g)
+
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
     print('graph type: {}'.format(gtype))
     g = add_p_and_delta(g, p, delta)
 
-    time_probas, node2id, id2node = infection_time_estimation(g, args.n_rounds,
-                                                              return_node2id=True)
+    if False:
+        time_probas, node2id, id2node = infection_time_estimation(g, args.n_rounds,
+                                                                  return_node2id=True)
     
     nx.write_gpickle(g, '{}/graph.gpkl'.format(output_dir, gtype))
 
-    pkl.dump(time_probas,
-             open('{}/{}.pkl'.format(output_dir, INF_TIME_PROBA_FILE), 'wb'))
+    if False:
+        pkl.dump(time_probas,
+                 open('{}/{}.pkl'.format(output_dir, INF_TIME_PROBA_FILE), 'wb'))
 
-    pkl.dump(node2id,
-             open('{}/{}.pkl'.format(output_dir, NODE2ID_FILE), 'wb'))
-    pkl.dump(id2node,
-             open('{}/{}.pkl'.format(output_dir, ID2NODE_FILE), 'wb'))
+        pkl.dump(node2id,
+                 open('{}/{}.pkl'.format(output_dir, NODE2ID_FILE), 'wb'))
+        pkl.dump(id2node,
+                 open('{}/{}.pkl'.format(output_dir, ID2NODE_FILE), 'wb'))
     
 if __name__ == "__main__":
     main()

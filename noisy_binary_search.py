@@ -3,21 +3,20 @@ import networkx as nx
 
 from copy import copy
 from ic import sample_graph_from_infection
-from core import normalize_mu
 
 
 NOISY_BINARY_SEARCH = 'noisy_bs'
 
 
 def median_node(g, mu, sp_len):
-    def sum_of_weighted_dist(q):
-        mus = np.array([mu[v] for v in g.nodes_iter()])
-        lens = np.array([sp_len[q][v] for v in g.nodes_iter()])
-        return np.sum(mus * lens)
+    # @profile
+    # def sum_of_weighted_dist(q):
+    #     lens = sp_len[q, :]
+    #     return np.sum(mu * lens)
+    # return min(g.nodes_iter(), key=sum_of_weighted_dist)
+    return np.argmin(sp_len @ mu)
 
-    return min(g.nodes_iter(), key=sum_of_weighted_dist)
 
-@profile
 def noisy_binary_search(g,
                         source,
                         infection_times,
@@ -25,16 +24,20 @@ def noisy_binary_search(g,
                         sp_len,
                         consistency_multiplier,
                         max_iter,
+                        sampled_graphs,
                         uninfected_simulation_rounds=100,
                         debug=False,
                         save_log=False):
+    """sp_len: 2d array of shortest path length
+    """
     # observed from the plot in infection_probability_vs_fraction_of_shortest_path.ipynb
-    mu = {n: 1 for n in g.nodes_iter()}
+    mu = np.ones(g.number_of_nodes(), dtype=np.float)
     for n in obs_nodes:
         mu[n] = 0
 
     queried_nodes = copy(obs_nodes)
     querie_nodes_log = []
+
     for i in range(max_iter):
         if debug:
             print('source\'s mu: {:.2f}'.format(mu[source]))
@@ -53,17 +56,14 @@ def noisy_binary_search(g,
             if debug:
                 print('query is not infected')
             # estimate the fraction of simulations that n is not infected
-            reward = {n: 0 for n in g.nodes_iter()}
-            for i in range(uninfected_simulation_rounds):
-                sg = sample_graph_from_infection(g)
+            reward = np.zeros(g.number_of_nodes(), dtype=np.float)
+            for sg in sampled_graphs:
                 sp_len_prime = nx.shortest_path_length(sg, source=q)
                 for n in g.nodes_iter():
                     if n not in sp_len_prime:
                         reward[n] += 1
-            for n in g.nodes_iter():
-                mu[n] *= (reward[n] / uninfected_simulation_rounds)
-                
-            mu = normalize_mu(mu)
+            mu *= reward
+            mu = mu / mu.sum()
         else:
             # check if q is source
             found_source = True
@@ -106,7 +106,7 @@ def noisy_binary_search(g,
                             mu[n] *= consistency_multiplier
                         else:
                             mu[n] *= (1 - consistency_multiplier)
-                    mu = normalize_mu(mu)
+                    mu = mu / mu.sum()
 
     query_count = len(queried_nodes - obs_nodes)
     if debug:

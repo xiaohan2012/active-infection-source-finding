@@ -8,16 +8,16 @@ for e (7); do
     # eval ${cmd} -t grid -b 2 -e ${e};
 done
 
-for e ({10..12}); do
+for e ({4..12}); do
     print pl-tree
     print $e
-    # eval ${cmd} -t pl-tree -b 2 -e ${e};
+    eval ${cmd} -t pl-tree -b 2 -e ${e};
 done
 
 for e ({6..12}); do
     print er
     print $e
-    # eval ${cmd} -t er -b 2 -e ${e};
+    eval ${cmd} -t er -b 2 -e ${e};
 done
 
 for e ({6..12}); do

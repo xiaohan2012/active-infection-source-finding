@@ -46,8 +46,9 @@ def main(query_methods, n_rounds, gtype, size_params,
                 max_iter=g.number_of_nodes())
 
         def noisy_bs_wrapper(consistency_multiplier):
-            return experiment_noisy_bs_n_rounds(g, n_rounds, consistency_multiplier,
-                                                parallelize=False)
+            assert sp_len is not None
+            return experiment_noisy_bs_n_rounds(g, sp_len,
+                                                n_rounds, consistency_multiplier)
 
         if MAX_MU in query_methods:
             print(MAX_MU)

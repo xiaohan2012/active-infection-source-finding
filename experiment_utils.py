@@ -5,7 +5,7 @@ import networkx as nx
 from tqdm import tqdm
 
 
-from ic import make_partial_cascade
+from ic import make_partial_cascade, sample_graph_from_infection
 from mwu import main_routine as mwu
 from edge_mwu import mwu_by_infection_direction
 from noisy_binary_search import noisy_binary_search
@@ -99,6 +99,7 @@ def counts_to_stat(counts):
 
 
 def noisy_bs_one_round(g, sp_len,
+                       sampled_graphs,
                        consistency_multiplier,
                        debug=False):
     source, obs_nodes, infection_times, _ = make_partial_cascade(g, 0.01)
@@ -108,21 +109,19 @@ def noisy_bs_one_round(g, sp_len,
                             sp_len,
                             consistency_multiplier=consistency_multiplier,
                             max_iter=g.number_of_nodes(),
+                            sampled_graphs=sampled_graphs,
                             debug=debug)
     return c
 
 
 def experiment_noisy_bs_n_rounds(g, sp_len,
                                  N,
-                                 consistency_multiplier,
-                                 parallelize=True):
-    if parallelize:
-        return Parallel(n_jobs=-1)(delayed(noisy_bs_one_round)(
-            g, sp_len, consistency_multiplier)
-                                   for i in tqdm(range(N)))
-    else:
-        cnts = []
-        for i in tqdm(range(N)):
-            c = noisy_bs_one_round(g, sp_len, consistency_multiplier)
-            cnts.append(c)
-        return cnts
+                                 consistency_multiplier):
+    cnts = []
+    sampled_graphs = [sample_graph_from_infection(g)
+                      for _ in range(100)]
+    for i in tqdm(range(N)):
+        c = noisy_bs_one_round(g, sp_len, sampled_graphs,
+                               consistency_multiplier)
+        cnts.append(c)
+    return cnts
