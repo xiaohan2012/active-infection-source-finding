@@ -3,6 +3,7 @@ import math
 import matplotlib as mpl
 import networkx as nx
 from matplotlib import pyplot as plt
+from cycler import cycler
 from utils import infeciton_time2weight
 
 
@@ -120,3 +121,13 @@ def plot_query_process(g, source, obs_nodes, infection_times,
                                                                      mu[source],
                                                                      check_neighbor_threshold))
     return fig, ax
+
+
+def richify_line_style(plt):
+    plt.style.use('fivethirtyeight')
+    plt.rc('axes',
+           prop_cycle=(
+               cycler('color', ['r', 'g', 'b', 'y'] * 2) +
+               cycler('linestyle', ['-', '--', ':', '-.'] + list(reversed(['-', '--', ':', '-.']))) +
+               cycler('marker', ['o', 'v', 's', '*', 's', '*', 'o', 'v'])
+           ))

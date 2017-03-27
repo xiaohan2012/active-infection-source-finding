@@ -108,7 +108,7 @@ def main(query_methods, n_rounds, gtype, size_params,
 
 
 if __name__ == '__main__':
-    ALL_METHODS = (MAX_MU, RAND_MAX_MU, RANDOM, MEDIAN_NODE, 'dog', 'binary_search')
+    ALL_METHODS = (MAX_MU, RAND_MAX_MU, RANDOM, 'dog', 'binary_search')
 
     import argparse
     

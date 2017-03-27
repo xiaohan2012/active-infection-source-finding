@@ -5,17 +5,12 @@ import os
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
-from cycler import cycler
 from synthetic_data import PL_TREE
+from plot_utils import richify_line_style
 
 
 def main(gtype, base=2):
-    plt.style.use('fivethirtyeight')
-    plt.rc('axes', prop_cycle=(cycler('color', ['r', 'g', 'b', 'y'] * 2) +
-                               cycler('linestyle', ['-', '--', ':', '-.'] + list(reversed(['-', '--', ':', '-.']))) +
-                               cycler('marker', ['o', 'v', 's', '*', 's', '*', 'o', 'v'])
-    ))
-
+    richify_line_style(plt)
     df = pd.read_pickle('data/{}/performance.pkl'.format(gtype))
     fig, ax = plt.subplots(1, 1, figsize=(10, 8))
     methods, x = df.index.levels
