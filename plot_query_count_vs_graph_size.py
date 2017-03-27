@@ -15,13 +15,13 @@ def main(gtype, base=2):
     fig, ax = plt.subplots(1, 1, figsize=(10, 8))
     methods, x = df.index.levels
     methods, x = methods.tolist(), x.tolist()
+    xaxis_len = min(len(df['50%'][m].tolist()) for m in sorted(methods))
+    x = x[:xaxis_len]
     for m in sorted(methods):
         if gtype == PL_TREE and m == 'random':
             continue
 
-        y = df['50%'][m].fillna(0).tolist()
-        lb = df['25%'][m].fillna(0).tolist()
-        ub = df['75%'][m].fillna(0).tolist()
+        y = df['50%'][m].tolist()[:xaxis_len]
 
         # ax.errorbar(x, y, yerr=np.array([lb, ub]))
         ax.plot(x, y, markersize=12)
