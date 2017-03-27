@@ -17,7 +17,7 @@ def median_node(g, mu, sp_len):
 
     return min(g.nodes_iter(), key=sum_of_weighted_dist)
 
-
+@profile
 def noisy_binary_search(g,
                         source,
                         infection_times,

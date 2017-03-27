@@ -5,12 +5,10 @@ import arrow
 import pandas as pd
 import networkx as nx
 from mwu import (MAX_MU, RANDOM, RAND_MAX_MU)
-from edge_mwu import MEDIAN_NODE
-from noisy_binary_search import NOISY_BINARY_SEARCH, noisy_binary_search
+from noisy_binary_search import NOISY_BINARY_SEARCH
 from tree_binary_search import find_source as find_source_binary_search
 from synthetic_data import (load_data_by_gtype, all_graph_types)
 from experiment_utils import (experiment_node_mwu_multiple_rounds,
-                              experiment_edge_mwu_multiple_rounds,
                               experiment_multiple_rounds,
                               experiment_dog_multiple_rounds,
                               experiment_noisy_bs_n_rounds,
@@ -32,26 +30,19 @@ def main(query_methods, n_rounds, gtype, size_params,
             print('fail to load {}/{}'.format(gtype, size_param))
             break
 
+        print('|V| = {}'.format(g.number_of_nodes()))
+
         def node_mwu_wrapper(method):
+            assert time_probas is not None
+            assert node2id is not None
+            assert id2node is not None
+
             return experiment_node_mwu_multiple_rounds(
                 n_rounds, g, node2id, id2node, time_probas,
                 fraction=fraction, epsilon=epsilon,
                 sampling_method=sampling_method,
                 query_selection_method=method,
                 check_neighbor_threshold=check_neighbor_threshold,
-                max_iter=g.number_of_nodes())
-
-        def edge_mwu_wrapper(method):
-            assert dir_tbl is not None
-            assert inf_tbl is not None
-            return experiment_edge_mwu_multiple_rounds(
-                g, method,
-                dir_tbl, inf_tbl,
-                sp_len,
-                check_neighbor_threshold=check_neighbor_threshold,
-                fraction=fraction,
-                sampling_method=sampling_method,
-                rounds=n_rounds,
                 max_iter=g.number_of_nodes())
 
         def noisy_bs_wrapper(consistency_multiplier):

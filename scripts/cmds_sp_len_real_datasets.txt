@@ -1,0 +1,3 @@
+python build_sp_len.py p2p-gnutella08 ""
+python build_sp_len.py arxiv-hep-th ""
+python build_sp_len.py enron-email ""

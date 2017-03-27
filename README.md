@@ -1,5 +1,11 @@
 # active infection source finding
 
+# Important scripts
+
+- `query_count_vs_graph_size.py`
+- `query_count_on_dataset.py`
+
+
 # Todo
 
 - `edge_mwu: why it` sucks when setting `mu[q]=0` for query node that is not source.

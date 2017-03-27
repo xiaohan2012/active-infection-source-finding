@@ -112,10 +112,10 @@ def noisy_bs_one_round(g, sp_len,
     return c
 
 
-def experiment_noisy_bs_n_rounds(g, N,
+def experiment_noisy_bs_n_rounds(g, sp_len,
+                                 N,
                                  consistency_multiplier,
                                  parallelize=True):
-    sp_len = nx.shortest_path_length(g)
     if parallelize:
         return Parallel(n_jobs=-1)(delayed(noisy_bs_one_round)(
             g, sp_len, consistency_multiplier)

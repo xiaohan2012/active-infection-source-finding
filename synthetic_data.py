@@ -60,13 +60,20 @@ def load_data_by_gtype(gtype, size_param_str):
             SP_LEN_NAME), 'rb'))
     except IOError:
         sp_len = None
-        
-    time_probas = pkl.load(open('data/{}/{}/{}.pkl'.format(gtype, size_param_str,
-                                                           INF_TIME_PROBA_FILE), 'rb'))
-    node2id = pkl.load(open('data/{}/{}/{}.pkl'.format(gtype, size_param_str,
-                                                       NODE2ID_FILE), 'rb'))
-    id2node = pkl.load(open('data/{}/{}/{}.pkl'.format(gtype, size_param_str,
-                                                       ID2NODE_FILE), 'rb'))
+
+    try:
+        time_probas = pkl.load(open('data/{}/{}/{}.pkl'.format(gtype, size_param_str,
+                                                               INF_TIME_PROBA_FILE), 'rb'))
+    except IOError:
+        time_probas = None
+
+    try:
+        node2id = pkl.load(open('data/{}/{}/{}.pkl'.format(gtype, size_param_str,
+                                                           NODE2ID_FILE), 'rb'))
+        id2node = pkl.load(open('data/{}/{}/{}.pkl'.format(gtype, size_param_str,
+                                                           ID2NODE_FILE), 'rb'))
+    except IOError:
+        node2id, id2node = None, None
     return g, time_probas, dir_tbl, inf_tbl, sp_len, node2id, id2node
 
 
