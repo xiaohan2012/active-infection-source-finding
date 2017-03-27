@@ -6,12 +6,15 @@ import pandas as pd
 import networkx as nx
 from mwu import (MAX_MU, RANDOM, RAND_MAX_MU)
 from edge_mwu import MEDIAN_NODE
+from noisy_binary_search import NOISY_BINARY_SEARCH, noisy_binary_search
 from tree_binary_search import find_source as find_source_binary_search
 from synthetic_data import (load_data_by_gtype, all_graph_types)
 from experiment_utils import (experiment_node_mwu_multiple_rounds,
                               experiment_edge_mwu_multiple_rounds,
                               experiment_multiple_rounds,
-                              experiment_dog_multiple_rounds, counts_to_stat)
+                              experiment_dog_multiple_rounds,
+                              experiment_noisy_bs_n_rounds,
+                              counts_to_stat)
 
 
 def main(query_methods, n_rounds, gtype, size_params,
@@ -50,7 +53,11 @@ def main(query_methods, n_rounds, gtype, size_params,
                 sampling_method=sampling_method,
                 rounds=n_rounds,
                 max_iter=g.number_of_nodes())
-        
+
+        def noisy_bs_wrapper(consistency_multiplier):
+            return experiment_noisy_bs_n_rounds(g, n_rounds, consistency_multiplier,
+                                                parallelize=False)
+
         if MAX_MU in query_methods:
             print(MAX_MU)
             counts = node_mwu_wrapper(MAX_MU)
@@ -77,11 +84,11 @@ def main(query_methods, n_rounds, gtype, size_params,
                 rows.append(counts_to_stat(counts))
                 indices.append(('dog-{:.2f}'.format(f), g.number_of_nodes()))
 
-        if MEDIAN_NODE in query_methods:
-            print(MEDIAN_NODE)
-            counts = edge_mwu_wrapper(MEDIAN_NODE)
+        if NOISY_BINARY_SEARCH in query_methods:
+            print(NOISY_BINARY_SEARCH)
+            counts = noisy_bs_wrapper(0.9)
             rows.append(counts_to_stat(counts))
-            indices.append((MEDIAN_NODE, g.number_of_nodes()))
+            indices.append((NOISY_BINARY_SEARCH, g.number_of_nodes()))
 
         if 'binary_search' in query_methods:
             if not nx.is_tree(g):
@@ -108,7 +115,7 @@ def main(query_methods, n_rounds, gtype, size_params,
 
 
 if __name__ == '__main__':
-    ALL_METHODS = (MAX_MU, RAND_MAX_MU, RANDOM, 'dog', 'binary_search')
+    ALL_METHODS = (MAX_MU, RAND_MAX_MU, RANDOM, 'dog', 'binary_search', NOISY_BINARY_SEARCH)
 
     import argparse
     

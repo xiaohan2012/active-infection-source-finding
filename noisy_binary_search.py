@@ -6,6 +6,9 @@ from ic import sample_graph_from_infection
 from core import normalize_mu
 
 
+NOISY_BINARY_SEARCH = 'noisy_bs'
+
+
 def median_node(g, mu, sp_len):
     def sum_of_weighted_dist(q):
         mus = np.array([mu[v] for v in g.nodes_iter()])

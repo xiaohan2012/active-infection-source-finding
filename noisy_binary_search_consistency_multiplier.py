@@ -5,7 +5,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 
-from synthetic_data import load_data_by_gtype
+from synthetic_data import load_data_by_gtype, add_p_and_delta
 from experiment_utils import experiment_noisy_bs_n_rounds
 
 
@@ -21,6 +21,7 @@ gtypes = [('grid', '2-4'),
 for gtype, param in gtypes:
     print(gtype)
     g = load_data_by_gtype(gtype, param)[0]
+    g = add_p_and_delta(g, 0.8, 1)
     multipliers = [0.6, 0.7, 0.8, 0.9]
     means = []
     medians = []
