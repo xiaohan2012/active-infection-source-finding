@@ -7,7 +7,7 @@ from ic import sample_graph_from_infection
 
 NOISY_BINARY_SEARCH = 'noisy_bs'
 
-
+# @profile
 def median_node(g, mu, sp_len):
     # @profile
     # def sum_of_weighted_dist(q):
@@ -16,7 +16,7 @@ def median_node(g, mu, sp_len):
     # return min(g.nodes_iter(), key=sum_of_weighted_dist)
     return np.argmin(sp_len @ mu)
 
-
+# @profile
 def noisy_binary_search(g,
                         source,
                         infection_times,
@@ -102,7 +102,7 @@ def noisy_binary_search(g,
             if len(possible_ancestors) > 0:
                 for a in possible_ancestors:
                     for n in g.nodes_iter():
-                        if sp_len[n][q] == (sp_len[n][a] + g[a][q]['d']):
+                        if sp_len[n, q] == (sp_len[n, a] + g[a][q]['d']):
                             mu[n] *= consistency_multiplier
                         else:
                             mu[n] *= (1 - consistency_multiplier)

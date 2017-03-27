@@ -27,8 +27,7 @@ def main(dataset,
     # binary search
     counts = experiment_noisy_bs_n_rounds(
         g, sp_len,
-        n_rounds, consistency_multiplier,
-        parallelize=False)
+        n_rounds, consistency_multiplier)
     rows.append(counts_to_stat(counts))
     index.append(NOISY_BINARY_SEARCH)
     
