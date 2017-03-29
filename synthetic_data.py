@@ -17,6 +17,7 @@ PL_TREE = 'pl-tree'
 ER = 'er'
 BARABASI = 'barabasi'
 CLIQUE = 'clique'
+LINE = 'line'
 all_graph_types = [KRONECKER_RAND,
                    KRONECKER_PERI,
                    KRONECKER_HIER,
@@ -24,7 +25,8 @@ all_graph_types = [KRONECKER_RAND,
                    PL_TREE,
                    ER,
                    BARABASI,
-                   CLIQUE]
+                   CLIQUE,
+                   LINE]
 
 
 INF_TIME_PROBA_FILE = 'inf_time_proba_matrix'
@@ -125,13 +127,19 @@ def main():
         g = grid_2d(size)
     elif gtype == CLIQUE:
         g = nx.complete_graph(size)
+    elif gtype == LINE:
+        g = nx.path_graph(size)
     else:
         raise ValueError('unsupported graph type {}'.format(gtype))
 
     g.remove_edges_from(g.selfloop_edges())
     print('|V|={}, |E|={}'.format(g.number_of_nodes(), g.number_of_edges()))
 
-    g = nx.convert_node_labels_to_integers(g)
+    if gtype == GRID:
+        mapping = {(i, j): args.size * i + j for i, j in g.nodes_iter()}
+        g = nx.relabel_nodes(g, mapping)
+    else:
+        g = nx.convert_node_labels_to_integers(g)
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
