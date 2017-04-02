@@ -14,6 +14,7 @@ KRONECKER_PERI = 'kr-peri'
 KRONECKER_HIER = 'kr-hier'
 GRID = 'grid'
 PL_TREE = 'pl-tree'
+B_TREE = 'balanced-tree'
 ER = 'er'
 BARABASI = 'barabasi'
 CLIQUE = 'clique'
@@ -23,6 +24,7 @@ all_graph_types = [KRONECKER_RAND,
                    KRONECKER_HIER,
                    GRID,
                    PL_TREE,
+                   B_TREE,
                    ER,
                    BARABASI,
                    CLIQUE,
@@ -119,6 +121,8 @@ def main():
     elif gtype == PL_TREE:
         p = 0.88
         g = random_powerlaw_tree(size, tries=999999)
+    elif gtype == B_TREE:
+        g = nx.balanced_tree(args.exponent_base, args.size_exponent)
     elif gtype == ER:
         g = extract_larges_CC(nx.fast_gnp_random_graph(size, 0.2))
     elif gtype == BARABASI:

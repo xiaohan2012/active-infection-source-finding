@@ -36,8 +36,9 @@ def noisy_binary_search(g,
         mu[n] = 0
 
     queried_nodes = copy(obs_nodes)
-    querie_nodes_log = []
-
+    queried_nodes_log = []
+    mu_log = []
+    
     for i in range(max_iter):
         if debug:
             print('source\'s mu: {:.2f}'.format(mu[source]))
@@ -48,7 +49,8 @@ def noisy_binary_search(g,
         queried_nodes.add(q)
 
         if save_log:
-            querie_nodes_log.append(q)
+            queried_nodes_log.append(q)
+
         if debug:
             print('query node: {}'.format(q))
 
@@ -83,7 +85,7 @@ def noisy_binary_search(g,
                 for n in g.neighbors_iter(q):
                     queried_nodes.add(n)
                     if save_log:
-                        querie_nodes_log.append(n)
+                        queried_nodes_log.append(n)
                     if infection_times[q] - infection_times[n] == g[n][q]['d']:
                         possible_ancestors.append(n)
             else:
@@ -91,7 +93,8 @@ def noisy_binary_search(g,
                 for n in g.neighbors_iter(q):
                     queried_nodes.add(n)
                     if save_log:
-                        querie_nodes_log.append(n)
+                        # querie_nodes_log.append(n)
+                        pass
                     if infection_times[q] - infection_times[n] == g[n][q]['d']:
                         possible_ancestors.append(n)
                         break
@@ -107,11 +110,13 @@ def noisy_binary_search(g,
                         else:
                             mu[n] *= (1 - consistency_multiplier)
                     mu = mu / mu.sum()
+            if save_log:
+                mu_log.append(copy(mu))
 
     query_count = len(queried_nodes - obs_nodes)
     if debug:
         print('used {} queries to find the source'.format(query_count))
     if save_log:
-        return query_count, queried_nodes
+        return query_count, queried_nodes, mu_log
     else:
         return query_count

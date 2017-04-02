@@ -127,8 +127,7 @@ def richify_line_style(plt):
     plt.style.use('fivethirtyeight')
     plt.rc('axes',
            prop_cycle=(
-               cycler('color', ['r', 'g', 'b', 'y', 'm'] * 2) +
-               cycler('linestyle', ['-', '--', ':', '-.', '-'] +
-                      list(reversed(['-', '--', ':', '-.', '-']))) +
-               cycler('marker', ['o', 'v', 's', '*', 's', '*', 'o', 'v', 's', 'v'])
+               cycler('color', ['r', 'r', 'g', 'g', 'g', 'b']) +
+               cycler('linestyle', ['-', '--', ':', '-.', '--', '-']) +
+               cycler('marker', ['o', 'v', 's', '*', 'o', '*'])
            ))

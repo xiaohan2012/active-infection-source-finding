@@ -3,7 +3,7 @@ import pandas as pd
 
 
 # paths = sys.argv[1:]
-gtype = 'kr-hier'
+gtype = 'pl-tree'
 utc = arrow.utcnow()
 date = utc.to('Europe/Helsinki').format('YYYY-MM-DD')
             

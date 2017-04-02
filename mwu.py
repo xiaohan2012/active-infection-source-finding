@@ -59,7 +59,8 @@ def main_routine(g, node2id, id2node,
 
         penalty = penalty_using_distribution(q, outcome, s2n_probas, node2id)
         for n, p in penalty.items():
-            mu[n] *= np.power(1-epsilon, p)
+            # mu[n] *= np.power(1-epsilon, p)
+            mu[n] *= p
     
         mu = normalize_mu(mu)
         queried_nodes.add(q)
