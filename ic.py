@@ -51,18 +51,14 @@ def make_full_cascade(g, source=None, is_sampled=False):
 
 def make_partial_cascade(g, fraction, sampling_method='uniform'):
     """simulate one IC cascade and return the source, infection times and infection tree"""
-    while True:
-        infection_times = make_full_cascade(g)
-        tree = None  # compatibility reason
+    tree = None  # compatibility reason
+    infection_times = make_full_cascade(g)
 
-        cascade_size = np.count_nonzero(np.invert(np.isinf(list(infection_times.values()))))
+    infected_nodes = [n for n in g.nodes_iter() if not np.isinf(infection_times[n])]
+    cascade_size = len(infected_nodes)
 
-        sample_size = math.ceil(cascade_size * fraction)
-        infected_nodes = [n for n in g.nodes_iter() if not np.isinf(infection_times[n])]
-        
-        if len(infected_nodes) > sample_size:
-            break
-        
+    sample_size = math.ceil(cascade_size * fraction)
+    
     if sampling_method == 'uniform':
         idx = np.arange(len(infected_nodes))
         sub_idx = np.random.choice(idx, sample_size)
@@ -166,7 +162,7 @@ def tranpose_3d_tensor(path, temp_paths_for_source):
 
 
 # @profile
-def infection_time_estimation(g, n_rounds, return_node2id=False):
+def infection_time_estimation(g, n_rounds, return_node2id=False, debug=True):
     """
     estimate the infection time distribution
     n_rounds of cascades for *each* node
@@ -187,7 +183,8 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
         # so that each source computatio only loads what it needs
         sampled_graphs = Parallel(n_jobs=-1)(delayed(sample_graph_from_infection)(g)
                                              for i in range(n_rounds))
-        print('calculating shortest path..')
+        if debug:
+            print('calculating shortest path..')
         
         sp_len_paths = Parallel(n_jobs=-1)(delayed(run_shortest_path_length)(sg, id2node)
                                            for sg in tqdm(sampled_graphs))
@@ -198,7 +195,8 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
         # each temp file corresponds to one source
         # it records the infection times of the other nodes
         # each row is a cascade
-        print('dumping shortest path for each source...')
+        if debug:
+            print('dumping shortest path for each source...')
         if False:
             import time
             import subprocess
@@ -224,7 +222,8 @@ def infection_time_estimation(g, n_rounds, return_node2id=False):
             #     os.unlink(f.name)
             #     f.close()
 
-        print('gathering stat..')
+        if debug:
+            print('gathering stat..')
         csr_marices = Parallel(n_jobs=-1)(delayed(run_for_source_tmp_file)(p)
                                           for p in tqdm(temp_paths_for_source))
 
