@@ -19,9 +19,15 @@ from graph_generator import add_p_and_delta
 
 gtype = sys.argv[1]
 param = sys.argv[2]
+DEBUG = False
 
-N1 = 100  # experiment round
-N2 = 100  # simulation rounds
+if DEBUG:
+    N1 = 10
+    N2 = 10
+else:
+    N1 = 500  # experiment round
+    N2 = 500  # simulation rounds
+
 g = load_data_by_gtype(gtype, param)[0]
 print('|V|={}'.format(g.number_of_nodes()))
 
@@ -44,6 +50,7 @@ def source_likelihood_ratios_and_dists_by_obs_pairs(
         iters = tqdm(range(N1))
     else:
         iters = range(N1)
+    
     for i in iters:
         source, obs_nodes, infection_times, _ = make_partial_cascade(g, q, 'uniform')
         sources.append(source)
@@ -55,10 +62,11 @@ def source_likelihood_ratios_and_dists_by_obs_pairs(
         for ref_node in ref_nodes:
             remaining_nodes -= {ref_node}
             for o in remaining_nodes:
-                source_likelihood *= np.array([extract_proba(s,
-                                                             o, infection_times[o],
-                                                             ref_node, infection_times[ref_node])
-                                               for s in np.arange(g.number_of_nodes())])
+                t1, t2 = infection_times[o], infection_times[ref_node]
+                probas = (np.sum((inf_time_3d[:, o, :] - inf_time_3d[:, ref_node, :]) == (t1 - t2), axis=1)
+                          / N2)
+                source_likelihood *= probas
+
                 source_likelihood /= source_likelihood.sum()
             # source_likelihood_given_single_obs(g, o, infection_times[o], N2)
         max_n = np.argmax(source_likelihood)
@@ -79,21 +87,31 @@ def source_likelihood_ratios_and_dists_by_obs_pairs(
 
 ps = np.linspace(0.1, 1.0, 10)
 qs = np.linspace(0.1, 1.0, 10)
-k = 4
-ref_nodes_fractions = np.linspace(0.1, 0.1*k, k)
+if DEBUG:
+    k = 1
+else:
+    k = 4
 
+ref_nodes_fractions = np.linspace(0.1, 0.1*k, k)
 
 inf_time_3d_by_p = {p: simulated_infection_time_3d(add_p_and_delta(g, p, 1), N2) for p in ps}
 
 
 for f_ref_nodes in ref_nodes_fractions:
     print('f_ref_nodes={}'.format(f_ref_nodes))
-    rows = Parallel(n_jobs=-1)(
-        delayed(source_likelihood_ratios_and_dists_by_obs_pairs)(
+    if not DEBUG:
+        rows = Parallel(n_jobs=-1)(
+            delayed(source_likelihood_ratios_and_dists_by_obs_pairs)(
+                g, p, q, N1, N2, inf_time_3d_by_p[p],
+                f_ref_nodes=f_ref_nodes,
+                debug=False)
+            for p in tqdm(ps) for q in qs)
+    else:
+        rows = [source_likelihood_ratios_and_dists_by_obs_pairs(
             g, p, q, N1, N2, inf_time_3d_by_p[p],
             f_ref_nodes=f_ref_nodes,
             debug=False)
-        for p in tqdm(ps) for q in qs)
+            for p in tqdm(ps) for q in qs]
 
     X, Y = np.meshgrid(ps, qs)
     ratio_median = np.array([r['ratio']['50%'] for r in rows]).reshape((len(ps), len(qs)))
