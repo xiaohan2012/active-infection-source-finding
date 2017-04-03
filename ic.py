@@ -160,7 +160,7 @@ def tranpose_3d_tensor(path, temp_paths_for_source):
                 fcntl.flock(out_file, fcntl.LOCK_UN)
         os.unlink(f.name)
 
-
+        
 # @profile
 def infection_time_estimation(g, n_rounds, return_node2id=False, debug=True):
     """
@@ -361,3 +361,23 @@ def infection_time_estimation(g, n_rounds, return_node2id=False, debug=True):
         return d, node2id, id2node
     else:
         return d
+
+
+def sp_len_dict_to_2d_array(n, sp_len, dtype=np.int16):
+    d = np.zeros((n, n), dtype=dtype)
+    for i in np.arange(n):
+        d[i, :] = [sp_len[i].get(j, -1) for j in np.arange(n)]
+    return d
+
+
+def simulation_infection_time_all_sources(g):
+    sg = sample_graph_from_infection(g)
+    sp_len = nx.shortest_path_length(sg)
+    n = g.number_of_nodes()
+    return sp_len_dict_to_2d_array(n, sp_len)
+
+
+def simulated_infection_time_3d(g, n_rounds):
+    array_list = Parallel(n_jobs=-1)(delayed(simulation_infection_time_all_sources)(g)
+                                     for i in tqdm(range(n_rounds)))
+    return np.dstack(array_list)
