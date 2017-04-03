@@ -1,13 +1,10 @@
 #! /bin/zsh
 
-params=("pl-tree 2-6"
-	"balanced-tree 2-6"
-	"er 2-6"
-	"barabasi 2-6"
-	"kr-peri 10-6"
-	"kr-hier 10-6"
-	"kr-rand 10-6")
+gtypes=(kr-rand kr-peri kr-hier balanced-tree er barabasi)
+exps=(6 7 8 9)
 
-for param in $params; do
-    eval "python how-well-can-we-model-probability.py $param"
+for gtype in $gtypes; do
+    for exp in $exps; do
+	eval "python how-well-can-we-model-probability.py $gtype 2-$exp"
+    done
 done

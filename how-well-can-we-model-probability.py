@@ -1,31 +1,22 @@
-
 # coding: utf-8
-
-# In[1]:
-
-# get_ipython().magic('matplotlib notebook')
-import matplotlib as plt
-plt.use('pdf')
+import os
 import sys
 import numpy as np
 import networkx as nx
 import pandas as pd
-from matplotlib import pyplot as plt, cm
-from matplotlib.ticker import LinearLocator, FormatStrFormatter
-from mpl_toolkits.mplot3d import axes3d
-from synthetic_data import load_data_by_gtype
-from ic import sample_graph_from_infection, make_partial_cascade, infection_time_estimation
-from graph_generator import add_p_and_delta
 from tqdm import tqdm
 from joblib import Parallel, delayed
 
+from synthetic_data import load_data_by_gtype
+from ic import sample_graph_from_infection, make_partial_cascade, infection_time_estimation
+from graph_generator import add_p_and_delta
 
-# In[40]:
 
 gtype = sys.argv[1]
 param = sys.argv[2]
-N1 = 500  # experiment round
-N2 = 500  # simulation rounds
+
+N1 = 10  # experiment round
+N2 = 10  # simulation rounds
 p = 0.7
 q = 0.01
 g = load_data_by_gtype(gtype, param)[0]
@@ -43,14 +34,6 @@ def source_likelihood_given_single_obs(g, o, t, N):
         matching_count += (times == t)
     return matching_count / N
 
-
-# In[42]:
-
-def source_likelihood_given_obs_pair(g, o1, t1, o2, t2, N):
-    pass
-
-
-# In[5]:
 
 def source_likelihood_ratios_and_dists(g, p, q, N1, N2, s2n_proba, debug=True):
     g = add_p_and_delta(g, p, 1)
@@ -102,8 +85,6 @@ p2sn_proba = {p: infection_time_estimation(add_p_and_delta(g, p, 1), N2, debug=F
 
 
 
-# In[19]:
-
 rows = Parallel(n_jobs=-1)(delayed(source_likelihood_ratios_and_dists)(g, p, q, N1, N2, p2sn_proba[p],
                                                                        debug=False)
                            for p in tqdm(ps) for q in qs)
@@ -112,40 +93,17 @@ rows = Parallel(n_jobs=-1)(delayed(source_likelihood_ratios_and_dists)(g, p, q, 
 # In[38]:
 
 # mpld3.enable_notebook()
-fig = plt.figure()
 X, Y = np.meshgrid(ps, qs)
 ratio_median = np.array([r['ratio']['50%'] for r in rows]).reshape((len(ps), len(qs)))
 ratio_mean = np.array([r['ratio']['mean'] for r in rows]).reshape((len(ps), len(qs)))
 dist_median = np.array([r['dist']['50%'] for r in rows]).reshape((len(ps), len(qs)))
 dist_mean = np.array([r['dist']['mean'] for r in rows]).reshape((len(ps), len(qs)))
-to_draw_data = {
-    'ratio-median': ratio_median,
-    'ratio-mean': ratio_mean,
-    'dist-median': dist_median,
-    'dist-mean': dist_mean,
-}
-
-for name, Z in to_draw_data.items():
-    plt.clf()
-    ax = fig.gca(projection='3d')
-    surf = ax.plot_surface(X, Y, Z, 
-                           rstride=1, cstride=1,
-                           vmin=0, vmax=1,
-                           cmap=cm.coolwarm)
-    ax.set_zlim(0, Z.max())
-    ax.zaxis.set_major_locator(LinearLocator(10))
-    ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
-    fig.colorbar(surf, shrink=0.5, aspect=5)    
-
-    ax.set_xlabel('p')
-    ax.set_ylabel('q')
-    ax.set_zlabel(name)
-    # plt.show()
-    fig.savefig('figs/{}/{}-vs-p-and-q.pdf'.format(gtype, name))
-# .display()
-
 
 # In[39]:
 
-np.savez('figs/{}/source-likelihood-vs-p-and-q-data'.format(gtype),
-         [X, Y, ratio_median, ratio_mean, dist_median, dist_mean])
+dirname = 'outputs/source-likelihood/{}'.format(gtype)
+if not os.path.exists(dirname):
+    os.makedirs(dirname)
+
+np.savez(dirname + '/{}'.format(param),
+         X, Y, ratio_median, ratio_mean, dist_median, dist_mean)

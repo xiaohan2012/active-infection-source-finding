@@ -124,7 +124,7 @@ def main():
     elif gtype == B_TREE:
         g = nx.balanced_tree(args.exponent_base, args.size_exponent)
     elif gtype == ER:
-        g = extract_larges_CC(nx.fast_gnp_random_graph(size, 0.2))
+        g = extract_larges_CC(nx.fast_gnp_random_graph(size, 0.1))
     elif gtype == BARABASI:
         g = extract_larges_CC(nx.barabasi_albert_graph(size, 5))
     elif gtype == GRID:
