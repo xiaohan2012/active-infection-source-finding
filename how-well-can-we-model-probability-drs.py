@@ -20,8 +20,8 @@ from graph_generator import add_p_and_delta
 gtype = sys.argv[1]
 param = sys.argv[2]
 
-N1 = 10  # experiment round
-N2 = 10  # simulation rounds
+N1 = 100  # experiment round
+N2 = 100  # simulation rounds
 g = load_data_by_gtype(gtype, param)[0]
 print('|V|={}'.format(g.number_of_nodes()))
 
