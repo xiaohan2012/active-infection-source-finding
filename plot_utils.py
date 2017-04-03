@@ -136,22 +136,23 @@ def richify_line_style(plt):
 
 
 def plot_source_likelihood_surface(
-        gtype, which, fig,
-        ax,
-        dump_name='source-likelihood-vs-p-and-q-data',
+        gtype, param, plot_type,
+        fig, dirname,
+        ax=None,
         angle=(15, 210), use_colorbar=True):
-    X, Y, ratio_median, ratio_mean, dist_median, dist_mean = np.load(
-        'figs/{}/{}.npz'.format(gtype, dump_name))['arr_0']
-    if which == 'ratio_median':
-        Z = ratio_median
-    elif which == 'ratio_mean':
-        Z = ratio_mean
-    elif which == 'dist_median':
-        Z = dist_median
-    elif which == 'dist_mean':
-        Z = dist_mean
+    bunch = np.load('outputs/{}/{}/{}.npz'.format(dirname, gtype, param))
+    X, Y = bunch['arr_0'], bunch['arr_1']
+    if plot_type == 'ratio_median':
+        Z = bunch['arr_2']
+    elif plot_type == 'ratio_mean':
+        Z = bunch['arr_3']
+    elif plot_type == 'dist_median':
+        Z = bunch['arr_4']
+    elif plot_type == 'dist_mean':
+        Z = bunch['arr_5']
     else:
-        raise ValueError('invalid data type')
+        raise ValueError('invalid plot_type')
+
     if ax is None:
         ax = fig.gca(projection='3d')
     surf = ax.plot_surface(X, Y, Z,
@@ -166,6 +167,6 @@ def plot_source_likelihood_surface(
 
     ax.set_xlabel('q')
     ax.set_ylabel('p')
-    ax.set_zlabel(which)
+    ax.set_zlabel(plot_type)
     ax.view_init(*angle)
     return fig, ax
