@@ -149,4 +149,3 @@ for name, Z in to_draw_data.items():
 
 np.savez('figs/{}/source-likelihood-vs-p-and-q-data'.format(gtype),
          [X, Y, ratio_median, ratio_mean, dist_median, dist_mean])
-

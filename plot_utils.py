@@ -2,7 +2,9 @@ import numpy as np
 import math
 import matplotlib as mpl
 import networkx as nx
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, cm
+from matplotlib.ticker import LinearLocator, FormatStrFormatter
+from mpl_toolkits.mplot3d import axes3d
 from cycler import cycler
 from utils import infeciton_time2weight
 
@@ -131,3 +133,39 @@ def richify_line_style(plt):
                cycler('linestyle', ['-', '--', ':', '-.', '--', '-']) +
                cycler('marker', ['o', 'v', 's', '*', 'o', '*'])
            ))
+
+
+def plot_source_likelihood_surface(
+        gtype, which, fig,
+        ax,
+        dump_name='source-likelihood-vs-p-and-q-data',
+        angle=(15, 210), use_colorbar=True):
+    X, Y, ratio_median, ratio_mean, dist_median, dist_mean = np.load(
+        'figs/{}/{}.npz'.format(gtype, dump_name))['arr_0']
+    if which == 'ratio_median':
+        Z = ratio_median
+    elif which == 'ratio_mean':
+        Z = ratio_mean
+    elif which == 'dist_median':
+        Z = dist_median
+    elif which == 'dist_mean':
+        Z = dist_mean
+    else:
+        raise ValueError('invalid data type')
+    if ax is None:
+        ax = fig.gca(projection='3d')
+    surf = ax.plot_surface(X, Y, Z,
+                           rstride=1, cstride=1,
+                           vmin=0, vmax=1,
+                           cmap=cm.coolwarm)
+    ax.set_zlim(0, Z.max())
+    ax.zaxis.set_major_locator(LinearLocator(10))
+    ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
+    if use_colorbar:
+        fig.colorbar(surf, shrink=0.5, aspect=5)
+
+    ax.set_xlabel('q')
+    ax.set_ylabel('p')
+    ax.set_zlabel(which)
+    ax.view_init(*angle)
+    return fig, ax
