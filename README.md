@@ -5,6 +5,21 @@
 - `query_count_vs_graph_size.py`
 - `query_count_on_dataset.py`
 
+## for source likelihood modeling
+
+simulation:
+
+- single obs: `how-well-can-we-model-probability.py`
+- DRS: `how-well-can-we-model-probability-drs.py`
+
+plots:
+
+  - cutting plane plot by reference node fration: `plot_source_likelihood_modeling_drs_by_ref_nodes_fraction.py`
+  - cutting plane plot by batch: `scripts/drs_source_likelihood_by_graphs.sh` (**also compares DRS with single obs**)
+  - surface plot by graph types and sizes: `plot_source_likelihood_modeling_by_graphs_and_sizes.py`
+  - surface plot by graph types: `plot_source_likelihood_modeling.py`
+
+
 
 # Todo
 
