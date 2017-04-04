@@ -11,6 +11,8 @@ from joblib import Parallel, delayed
 from glob import glob
 from gzip import GzipFile
 from tqdm import tqdm
+from utils import chunks
+import random
 
 
 def sample_graph_from_infection(g):
@@ -381,3 +383,72 @@ def simulated_infection_time_3d(g, n_rounds):
     array_list = Parallel(n_jobs=-1)(delayed(simulation_infection_time_all_sources)(g)
                                      for i in tqdm(range(n_rounds)))
     return np.dstack(array_list)
+
+
+def source_likelihood_1st_order(n_nodes, obs_nodes, inf_time_3d_by_p,
+                                infection_times,
+                                N2, eps=1e-6):
+    source_likelihood = np.ones(n_nodes, dtype=np.float64)
+    for o in obs_nodes:
+        single_probas = ((np.sum(inf_time_3d_by_p[:, o, :] == infection_times[o], axis=1) + eps)
+                         / (N2 + eps))
+        source_likelihood *= single_probas
+        source_likelihood /= source_likelihood.sum()
+    return source_likelihood
+
+
+def source_likelihood_2nd_order(n_nodes, obs_nodes, inf_time_3d_by_p,
+                                infection_times,
+                                N2, eps=1e-6):
+    source_likelihood = np.ones(n_nodes, dtype=np.float64)
+    obs_nodes = list(obs_nodes)
+    random.shuffle(obs_nodes)
+    pairs = chunks(obs_nodes, 2)
+    for pr in pairs:
+        if len(pr) == 1:
+            break
+        else:
+            o1, o2 = pr
+        bool_vect = np.logical_and(inf_time_3d_by_p[:, o1, :] == infection_times[o1],
+                                   inf_time_3d_by_p[:, o2, :] == infection_times[o2])
+        single_probas = ((np.sum(bool_vect, axis=1) + eps)
+                         / (N2 + eps))
+        source_likelihood *= single_probas
+        source_likelihood /= source_likelihood.sum()
+    return source_likelihood
+
+
+def source_likelihood_merging_neighbor_pair(g, obs_nodes, inf_time_3d_by_p,
+                                            infection_times,
+                                            N2, eps=1e-6):
+    source_likelihood = np.ones(g.number_of_nodes(),
+                                dtype=np.float64)
+    node_pool = list(obs_nodes)
+    pairs = []
+    while len(node_pool) > 0:
+        i = node_pool.pop()
+        found_pair = False
+        for j in node_pool:
+            if g.has_edge(i, j):
+                pairs.append((i, j))
+                node_pool.remove(j)
+                found_pair = True
+                break
+        if not found_pair:
+            pairs.append((i, ))
+    assert {i for tpl in pairs for i in tpl} == obs_nodes
+
+    for pr in pairs:
+        if len(pr) == 1:
+            o = pr[0]
+            single_probas = ((np.sum(inf_time_3d_by_p[:, o, :] == infection_times[o], axis=1) + eps)
+                             / (N2 + eps))
+        else:
+            o1, o2 = pr
+            bool_vect = np.logical_and(inf_time_3d_by_p[:, o1, :] == infection_times[o1],
+                                       inf_time_3d_by_p[:, o2, :] == infection_times[o2])
+            single_probas = ((np.sum(bool_vect, axis=1) + eps)
+                             / (N2 + eps))
+        source_likelihood *= single_probas
+        source_likelihood /= source_likelihood.sum()
+    return source_likelihood

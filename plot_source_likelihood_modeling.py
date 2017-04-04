@@ -7,8 +7,8 @@ from plot_utils import plot_source_likelihood_surface as plot_surface
 
 param = '2-6'
 graphs = ['er', 'barabasi', 'kr-hier', 'kr-peri', 'kr-rand', 'balanced-tree']
-dirname = 'source-likelihood'
-fig_dirname = 'source-likelihood-on-graphs-2-6'
+dirname = 'source-likelihood-2nd'
+fig_dirname = 'source-likelihood-on-graphs-2nd-2-6'
 
 
 def main(plot_type):
@@ -23,7 +23,7 @@ def main(plot_type):
     for i, gname in enumerate(graphs):
         ax = fig.add_subplot(nrow, ncol, i+1, projection='3d')
         plot_surface(gname, param, plot_type,
-                     fig, ax,
+                     fig, ax=ax,
                      dirname=dirname,
                      angle=angle,
                      use_colorbar=False)

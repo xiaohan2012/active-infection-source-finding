@@ -16,7 +16,7 @@ from matplotlib import pyplot as plt
 gtype = sys.argv[1]
 param = '2-6'
 drs_dirname = 'source-likelihood-drs'
-single_dirname = 'source-likelihood'
+other_dirnames = ['source-likelihood-1st', 'source-likelihood-2nd']
 output_dir = 'figs/source-likelihood-drs-by-ref-nodes-fraction/{}'.format(gtype)
 
 
@@ -28,13 +28,17 @@ data_list = [np.load('outputs/{}/{}/{}-f_ref-{:.1f}.npz'.format(drs_dirname,
                                                                 param, f))
              for f in fs]
 
-# result from single observation method
-data_list.append(np.load('outputs/{}/{}/{}.npz'.format(single_dirname,
-                                                       gtype,
-                                                       param)))
-X, Y = data_list[0]['arr_0'], data_list[0]['arr_1']
+for dirname in other_dirnames:
+    data_list.append(np.load('outputs/{}/{}/{}.npz'.format(
+        dirname,
+        gtype,
+        param)))
+
 legends = ['pair(f={:.1f})'.format(f) for f in fs]
-legends.append('single obs')
+legends += ['1st-order', '2nd-order']
+
+    
+X, Y = data_list[0]['arr_0'], data_list[0]['arr_1']
 
 to_plot_data = {
     'ratio_median': [d['arr_2'] for d in data_list],

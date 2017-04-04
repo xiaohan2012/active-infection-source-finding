@@ -90,3 +90,9 @@ def infeciton_time2weight(ts):
     times = times[(np.invert(np.isinf(times)))]
     max_val = np.max(times)
     return {n: (max_val - t if not np.isinf(t) else 0) for n, t in ts.items()}
+
+
+def chunks(l, n):
+    """Yield successive n-sized chunks from l."""
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
