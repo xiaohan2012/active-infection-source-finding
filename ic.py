@@ -63,7 +63,7 @@ def make_partial_cascade(g, fraction, sampling_method='uniform'):
     
     if sampling_method == 'uniform':
         idx = np.arange(len(infected_nodes))
-        sub_idx = np.random.choice(idx, sample_size)
+        sub_idx = np.random.choice(idx, sample_size, replace=False)
         obs_nodes = set([infected_nodes[i] for i in sub_idx])
     elif sampling_method == 'late_nodes':
         obs_nodes = set(sorted(infected_nodes, key=lambda n: -infection_times[n])[:sample_size])
