@@ -1,0 +1,65 @@
+Timer unit: 1e-06 s
+
+Total time: 106.623 s
+File: how-well-can-we-model-probability.py
+Function: source_likelihood_ratios_and_dists at line 42
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    42                                           @profile
+    43                                           def source_likelihood_ratios_and_dists(g, p, q, N1, N2, inf_time_3d_by_p, debug=True):
+    44       100        76065    760.6      0.1      g = add_p_and_delta(g, p, 1)
+    45       100          238      2.4      0.0      source_likelihood_array = []
+    46       100          177      1.8      0.0      sources = []
+    47       100          190      1.9      0.0      dist_array = []
+    48                                           
+    49       100         3768     37.7      0.0      @profile
+    50                                               def extract_proba(s, o, t):
+    51                                                   m = s2n_proba[s]
+    52                                                   if infection_times[o] < m.shape[1]:
+    53                                                       return m[o, infection_times[o]]
+    54                                                   else:
+    55                                                       return 0.001
+    56                                           
+    57       100          202      2.0      0.0      if debug:
+    58                                                   iters = tqdm(range(N1))
+    59                                               else:
+    60       100          288      2.9      0.0          iters = range(N1)
+    61      1100         2027      1.8      0.0      for i in iters:
+    62      1000      3293817   3293.8      3.1          source, obs_nodes, infection_times, _ = make_partial_cascade(g, q, 'uniform')
+    63      1000         3174      3.2      0.0          sources.append(source)
+    64      1000        18171     18.2      0.0          source_likelihood = np.ones(g.number_of_nodes(), dtype=np.float64)
+    65     16199        37932      2.3      0.0          for o in obs_nodes:
+    66     15199        51950      3.4      0.0              single_probas = np.asarray([extract_proba(s, o, infection_times[o])
+    67     15199    101222231   6659.8     94.9                                          for s in np.arange(g.number_of_nodes())],
+    68     15199       330283     21.7      0.3                                         dtype=np.float64)
+    69     15199        89828      5.9      0.1              source_likelihood *= single_probas
+    70     15199       354958     23.4      0.3              source_likelihood /= source_likelihood.sum()
+    71                                                       # source_likelihood_given_single_obs(g, o, infection_times[o], N2)
+    72      1000         7610      7.6      0.0          max_n = np.argmax(source_likelihood)
+    73      1000        55992     56.0      0.1          dist_to_max_n = nx.shortest_path_length(g, source=source, target=max_n)
+    74      1000         2232      2.2      0.0          dist_array.append(dist_to_max_n)
+    75      1000         1998      2.0      0.0          source_likelihood_array.append(source_likelihood)
+    76       100        16720    167.2      0.0      source_likelihood_array = np.array(source_likelihood_array, dtype=np.float64)
+    77       100          283      2.8      0.0      source_llh = np.array([source_likelihood_array[i, src]
+    78       100         1676     16.8      0.0                             for i, src in enumerate(sources)])
+    79       100        42064    420.6      0.0      ratios = source_llh / source_likelihood_array.max(axis=1)
+    80                                               return {
+    81       100       555087   5550.9      0.5          'ratio': pd.Series(ratios[np.invert(np.isnan(ratios))]).describe(),
+    82       100       453631   4536.3      0.4          'dist': pd.Series(dist_array).describe()
+    83                                               }
+
+Total time: 91.3388 s
+File: how-well-can-we-model-probability.py
+Function: extract_proba at line 49
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    49                                               @profile
+    50                                               def extract_proba(s, o, t):
+    51    972736      2681414      2.8      2.9          m = s2n_proba[s]
+    52    972736      2649778      2.7      2.9          if infection_times[o] < m.shape[1]:
+    53    937024     85987526     91.8     94.1              return m[o, infection_times[o]]
+    54                                                   else:
+    55     35712        20119      0.6      0.0              return 0.001
+

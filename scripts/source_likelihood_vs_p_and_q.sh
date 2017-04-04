@@ -1,6 +1,7 @@
 #! /bin/zsh
 
 gtypes=(kr-rand kr-peri kr-hier balanced-tree er barabasi)
+# exps=(6 7 8 9)
 exps=(6 7 8 9)
 
 for exp in $exps; do

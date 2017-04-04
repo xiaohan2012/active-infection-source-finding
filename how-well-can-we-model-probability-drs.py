@@ -34,17 +34,13 @@ print('|V|={}'.format(g.number_of_nodes()))
 
 def source_likelihood_ratios_and_dists_by_obs_pairs(
         g, p, q, N1, N2, inf_time_3d, f_ref_nodes=0.1,
+        eps=1e-6,
         debug=True):
     """inf_time_3d: shape = source x node x rounds"""
     g = add_p_and_delta(g, p, 1)
     source_likelihood_array = []
     sources = []
     dist_array = []
-
-    def extract_proba(s, o1, t1, o2, t2):
-        t1_arr = inf_time_3d[s, o1, :]
-        t2_arr = inf_time_3d[s, o2, :]
-        return np.sum((t1_arr - t2_arr) == (t1 - t2)) / N2
         
     if debug:
         iters = tqdm(range(N1))
@@ -63,8 +59,9 @@ def source_likelihood_ratios_and_dists_by_obs_pairs(
             remaining_nodes -= {ref_node}
             for o in remaining_nodes:
                 t1, t2 = infection_times[o], infection_times[ref_node]
-                probas = (np.sum((inf_time_3d[:, o, :] - inf_time_3d[:, ref_node, :]) == (t1 - t2), axis=1)
-                          / N2)
+                probas = ((np.sum((inf_time_3d[:, o, :] - inf_time_3d[:, ref_node, :]) == (t1 - t2), axis=1)
+                           + eps)
+                          / (N2 + eps))
                 source_likelihood *= probas
 
                 source_likelihood /= source_likelihood.sum()
