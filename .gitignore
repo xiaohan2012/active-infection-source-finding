@@ -91,3 +91,6 @@ ENV/
 *.prof
 *.lprof
 outputs/*
+data/*
+figs/*
+bad_examples/*
