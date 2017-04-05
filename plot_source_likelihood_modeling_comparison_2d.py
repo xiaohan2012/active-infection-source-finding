@@ -13,7 +13,7 @@ from matplotlib import pyplot as plt
 param = '2-6'
 
 graphs = ['er', 'barabasi', 'kr-hier', 'kr-peri', 'kr-rand', 'balanced-tree']
-methods = ['1st', '1st_time', 'drs']
+methods = ['1st', '1st_time', 'drs', 'drs_time_early', 'drs_time_late', 'drs_time_mean']
 dirnames = list(map(lambda m: 'source-likelihood-{}'.format(m),
                     methods))
 output_dir = 'figs/source-likelihood-comparison-2d/'
