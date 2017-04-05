@@ -5,6 +5,9 @@ import pandas as pd
 import os
 import pickle as pkl
 import fcntl
+import random
+import itertools
+
 from tempfile import NamedTemporaryFile
 from scipy.sparse import csr_matrix
 from joblib import Parallel, delayed
@@ -12,7 +15,6 @@ from glob import glob
 from gzip import GzipFile
 from tqdm import tqdm
 from utils import chunks
-import random
 
 
 def sample_graph_from_infection(g):
@@ -238,7 +240,7 @@ def infection_time_estimation(g, n_rounds, return_node2id=False, debug=True):
         # paralel for each source
         # more memory saving
         # however, each process needs to load all the sampled graphs,
-        # which is memory consuming
+        # which_node_time is memory consuming
         sampled_graphs = Parallel(n_jobs=-1)(delayed(sample_graph_from_infection)(g)
                                              for i in range(n_rounds))
 
@@ -387,7 +389,7 @@ def simulated_infection_time_3d(g, n_rounds):
 
 def source_likelihood_1st_order(n_nodes, obs_nodes, inf_time_3d_by_p,
                                 infection_times,
-                                N2, eps=1e-6):
+                                N2, eps=1):
     source_likelihood = np.ones(n_nodes, dtype=np.float64)
     for o in obs_nodes:
         single_probas = ((np.sum(inf_time_3d_by_p[:, o, :] == infection_times[o], axis=1) + eps)
@@ -399,7 +401,7 @@ def source_likelihood_1st_order(n_nodes, obs_nodes, inf_time_3d_by_p,
 
 def source_likelihood_2nd_order(n_nodes, obs_nodes, inf_time_3d_by_p,
                                 infection_times,
-                                N2, eps=1e-6):
+                                N2, eps=1):
     source_likelihood = np.ones(n_nodes, dtype=np.float64)
     obs_nodes = list(obs_nodes)
     random.shuffle(obs_nodes)
@@ -420,7 +422,7 @@ def source_likelihood_2nd_order(n_nodes, obs_nodes, inf_time_3d_by_p,
 
 def source_likelihood_merging_neighbor_pair(g, obs_nodes, inf_time_3d_by_p,
                                             infection_times,
-                                            N2, eps=1e-6):
+                                            N2, eps=1):
     source_likelihood = np.ones(g.number_of_nodes(),
                                 dtype=np.float64)
     node_pool = list(obs_nodes)
@@ -452,3 +454,86 @@ def source_likelihood_merging_neighbor_pair(g, obs_nodes, inf_time_3d_by_p,
         source_likelihood *= single_probas
         source_likelihood /= source_likelihood.sum()
     return source_likelihood
+
+
+def source_likelihood_1st_order_weighted_by_time(
+        n_nodes, obs_nodes, inf_time_3d_by_p,
+        infection_times,
+        N2, eps=1,
+        time_weight_func='linear'):
+    """this method add more importance to earlier infected nodes
+    """
+    times = np.array([infection_times[o] for o in obs_nodes])
+    t_max, t_min = times.max(), times.min()
+    if time_weight_func == 'linear':
+        def weight_func(t):
+            if t_max == t_min:
+                return 0
+            else:
+                return (t - t_min) / (t_max - t_min)
+    elif time_weight_func == 'inverse':
+        def weight_func(t):
+            return 1 / (t_max - t + eps)
+    else:
+        raise ValueError('unsupported time weight func')
+
+    source_likelihood = np.ones(n_nodes, dtype=np.float64)
+    for o in obs_nodes:
+        single_probas = ((np.sum(inf_time_3d_by_p[:, o, :] == infection_times[o], axis=1) + eps)
+                         / (N2 + eps) +
+                         weight_func(infection_times[o])) / 2
+        source_likelihood *= single_probas
+        source_likelihood /= source_likelihood.sum()
+    return source_likelihood
+
+
+def source_likelihood_drs(n_nodes, obs_nodes, inf_time_3d,
+                          infection_times,
+                          N2, eps=1):
+    source_likelihood = np.ones(n_nodes, dtype=np.float64)
+    obs_nodes = list(obs_nodes)
+    for o1, o2 in itertools.combinations(obs_nodes, 2):
+        t1, t2 = infection_times[o1], infection_times[o2]
+        probas = ((np.sum((inf_time_3d[:, o1, :] - inf_time_3d[:, o2, :]) == (t1 - t2), axis=1)
+                   + eps)
+                  / (N2 + eps))
+        source_likelihood *= probas
+        source_likelihood /= source_likelihood.sum()
+    return source_likelihood
+
+
+def source_likelihood_drs_time_weight(n_nodes, obs_nodes, inf_time_3d,
+                                      infection_times,
+                                      which_node_time,
+                                      N2, eps=1):
+    source_likelihood = np.ones(n_nodes, dtype=np.float64)
+    obs_nodes = list(obs_nodes)
+
+    times = np.array([infection_times[o] for o in obs_nodes])
+    t_max, t_min = times.max(), times.min()
+
+    def weight_func(t):
+        if t_max == t_min:
+            return 0
+        else:
+            return (t - t_min) / (t_max - t_min)
+    
+    for o1, o2 in itertools.combinations(obs_nodes, 2):
+        t1, t2 = infection_times[o1], infection_times[o2]
+
+        if which_node_time == 'early':
+            time = min(t1, t2)
+        elif which_node_time == 'late':
+            time = max(t1, t2)
+        elif which_node_time == 'mean':
+            time = (t1 + t2) / 2
+        time_weight = weight_func(time)
+
+        probas = (((np.sum((inf_time_3d[:, o1, :] - inf_time_3d[:, o2, :]) == (t1 - t2), axis=1)
+                   + eps)
+                  / (N2 + eps)) +
+                  time_weight) / 2
+        source_likelihood *= probas
+        source_likelihood /= source_likelihood.sum()
+    return source_likelihood
+

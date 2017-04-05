@@ -1,12 +1,18 @@
 #! /bin/zsh
 
 gtypes=(kr-rand kr-peri kr-hier balanced-tree er barabasi)
-exps=(6 7 8 9)
-method=1st
+# gtypes=(barabasi)
+# exps=(6 7 8 9)
+exps=(6)
+# methods=(1st 1st_time drs)
+methods=(drs)
+methods=(drs_time_early drs_time_late drs_time_mean)
 
-for exp in $exps; do
-    for gtype in $gtypes; do
-	print "$gtype $exp"
-	eval "python how-well-can-we-model-probability.py $gtype 2-$exp $method"
+for method in $methods; do
+    for exp in $exps; do
+	for gtype in $gtypes; do
+	    print "$gtype $exp $method"
+	    eval "python source_likelihood_estimation_experiment.py $gtype 2-$exp $method"
+	done
     done
 done

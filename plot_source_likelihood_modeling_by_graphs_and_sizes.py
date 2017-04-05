@@ -6,8 +6,9 @@ from matplotlib import pyplot as plt
 from plot_utils import plot_source_likelihood_surface as plot_surface
 
 params = ['2-6', '2-7', '2-8', '2-9']
-graphs = ['er', 'barabasi', 'kr-hier', 'kr-peri', 'kr-rand', 'balanced-tree']
-dirname = 'source-likelihood'
+# graphs = ['kr-hier', 'kr-peri', 'kr-rand', 'balanced-tree', 'er', 'barabasi']
+graphs = ['kr-hier', 'kr-peri', 'kr-rand']
+dirname = 'source-likelihood-1st'
 fig_dirname = 'source-likelihood-on-graphs-and-sizes'
 
 

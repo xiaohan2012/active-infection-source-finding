@@ -10,25 +10,11 @@ from joblib import Parallel, delayed
 from synthetic_data import load_data_by_gtype
 from ic import sample_graph_from_infection, make_partial_cascade, simulated_infection_time_3d, \
     source_likelihood_1st_order, source_likelihood_2nd_order, \
-    source_likelihood_merging_neighbor_pair
+    source_likelihood_merging_neighbor_pair, \
+    source_likelihood_1st_order_weighted_by_time, \
+    source_likelihood_drs, \
+    source_likelihood_drs_time_weight
 from graph_generator import add_p_and_delta
-
-
-gtype = sys.argv[1]
-param = sys.argv[2]
-estimation_method = sys.argv[3]
-
-DEBUG = False
-
-if DEBUG:
-    N1 = 10
-    N2 = 10
-else:
-    N1 = 500  # experiment round
-    N2 = 500  # simulation rounds
-
-g = load_data_by_gtype(gtype, param)[0]
-print('|V|={}'.format(g.number_of_nodes()))
 
 
 # In[41]:
@@ -46,6 +32,7 @@ def source_likelihood_given_single_obs(g, o, t, N):
 def source_likelihood_ratios_and_dists(g, p, q, N1, N2,
                                        inf_time_3d_by_p,
                                        estimation_method,
+                                       time_weight_func='linear',
                                        debug=True):
     g = add_p_and_delta(g, p, 1)
     source_likelihood_array = []
@@ -67,15 +54,25 @@ def source_likelihood_ratios_and_dists(g, p, q, N1, N2,
         if estimation_method == '1st':
             source_likelihood = source_likelihood_1st_order(
                 *source_estimation_params)
-        elif estimation_method == '2nd':
-            source_likelihood = source_likelihood_2nd_order(
+        elif estimation_method == '1st_time':
+            source_likelihood = source_likelihood_1st_order_weighted_by_time(
+                *source_estimation_params,
+                time_weight_func=time_weight_func)
+        elif estimation_method == 'drs':
+            source_likelihood = source_likelihood_drs(
                 *source_estimation_params)
-        elif estimation_method == 'nbr_pair':
-            source_likelihood = source_likelihood_merging_neighbor_pair(
-                g,
-                obs_nodes, inf_time_3d_by_p,
-                infection_times,
-                N2)
+        elif estimation_method == 'drs_time_early':
+            source_likelihood = source_likelihood_drs_time_weight(
+                *source_estimation_params,
+                which_node_time='early')
+        elif estimation_method == 'drs_time_late':
+            source_likelihood = source_likelihood_drs_time_weight(
+                *source_estimation_params,
+                which_node_time='late')
+        elif estimation_method == 'drs_time_mean':
+            source_likelihood = source_likelihood_drs_time_weight(
+                *source_estimation_params,
+                which_node_time='mean')
         else:
             raise ValueError('unsupported source estimation method')
         
@@ -92,41 +89,53 @@ def source_likelihood_ratios_and_dists(g, p, q, N1, N2,
         'dist': pd.Series(dist_array).describe()
     }
 
-ps = np.linspace(0.1, 1.0, 10)
-qs = np.linspace(0.1, 1.0, 10)
-inf_time_3d_by_p = {p: simulated_infection_time_3d(add_p_and_delta(g, p, 1), N2) for p in ps}
+if __name__ == '__main__':
+    gtype = sys.argv[1]
+    param = sys.argv[2]
+    estimation_method = sys.argv[3]
 
+    DEBUG = False
 
-if not DEBUG:
-    rows = Parallel(n_jobs=-1)(delayed(source_likelihood_ratios_and_dists)(
-        g, p, q, N1, N2,
-        inf_time_3d_by_p[p],
-        estimation_method=estimation_method,
-        debug=False)
-                               for p in tqdm(ps) for q in qs)
-else:
-    rows = [source_likelihood_ratios_and_dists(
-        g, p, q, N1, N2,
-        inf_time_3d_by_p[p],
-        estimation_method=estimation_method,
-        debug=False)
-            for p in tqdm(ps) for q in qs]
+    if DEBUG:
+        N1 = 10
+        N2 = 10
+    else:
+        N1 = 500  # experiment round
+        N2 = 500  # simulation rounds
 
+    g = load_data_by_gtype(gtype, param)[0]
+    print('|V|={}'.format(g.number_of_nodes()))
 
-# In[38]:
+    ps = np.linspace(0.1, 1.0, 10)
+    qs = np.linspace(0.1, 1.0, 10)
+    inf_time_3d_by_p = {p: simulated_infection_time_3d(add_p_and_delta(g, p, 1), N2) for p in ps}
 
-# mpld3.enable_notebook()
-X, Y = np.meshgrid(ps, qs)
-ratio_median = np.array([r['ratio']['50%'] for r in rows]).reshape((len(ps), len(qs)))
-ratio_mean = np.array([r['ratio']['mean'] for r in rows]).reshape((len(ps), len(qs)))
-dist_median = np.array([r['dist']['50%'] for r in rows]).reshape((len(ps), len(qs)))
-dist_mean = np.array([r['dist']['mean'] for r in rows]).reshape((len(ps), len(qs)))
+    if not DEBUG:
+        rows = Parallel(n_jobs=-1)(delayed(source_likelihood_ratios_and_dists)(
+            g, p, q, N1, N2,
+            inf_time_3d_by_p[p],
+            estimation_method=estimation_method,
+            debug=False)
+                                   for p in tqdm(ps) for q in qs)
+    else:
+        rows = [source_likelihood_ratios_and_dists(
+            g, p, q, N1, N2,
+            inf_time_3d_by_p[p],
+            estimation_method=estimation_method,
+            debug=False)
+                for p in tqdm(ps) for q in qs]
 
-# In[39]:
+    X, Y = np.meshgrid(ps, qs)
+    ratio_median = np.array([r['ratio']['50%'] for r in rows]).reshape((len(ps), len(qs)))
+    ratio_mean = np.array([r['ratio']['mean'] for r in rows]).reshape((len(ps), len(qs)))
+    dist_median = np.array([r['dist']['50%'] for r in rows]).reshape((len(ps), len(qs)))
+    dist_mean = np.array([r['dist']['mean'] for r in rows]).reshape((len(ps), len(qs)))
 
-dirname = 'outputs/source-likelihood-{}/{}'.format(estimation_method, gtype)
-if not os.path.exists(dirname):
-    os.makedirs(dirname)
+    dirname = 'outputs/source-likelihood-{}/{}'.format(
+        estimation_method, gtype)
 
-np.savez(dirname + '/{}'.format(param),
-         X, Y, ratio_median, ratio_mean, dist_median, dist_mean)
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+
+    np.savez(dirname + '/{}'.format(param),
+             X, Y, ratio_median, ratio_mean, dist_median, dist_mean)

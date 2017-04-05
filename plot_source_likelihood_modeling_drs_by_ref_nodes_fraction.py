@@ -16,8 +16,8 @@ from matplotlib import pyplot as plt
 gtype = sys.argv[1]
 param = '2-6'
 drs_dirname = 'source-likelihood-drs'
-other_dirnames = ['source-likelihood-1st', 'source-likelihood-2nd']
-output_dir = 'figs/source-likelihood-drs-by-ref-nodes-fraction/{}'.format(gtype)
+other_dirnames = ['source-likelihood-1st', 'source-likelihood-1st_time']
+output_dir = 'figs/source-likelihood-comparison/{}'.format(gtype)
 
 
 # In[34]:
@@ -35,7 +35,7 @@ for dirname in other_dirnames:
         param)))
 
 legends = ['pair(f={:.1f})'.format(f) for f in fs]
-legends += ['1st-order', '2nd-order']
+legends += ['1st-order', '1nd-order-time-weight']
 
     
 X, Y = data_list[0]['arr_0'], data_list[0]['arr_1']

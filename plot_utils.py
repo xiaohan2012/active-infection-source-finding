@@ -161,12 +161,12 @@ def plot_source_likelihood_surface(
                            cmap=cm.coolwarm)
     ax.set_zlim(0, Z.max())
     ax.zaxis.set_major_locator(LinearLocator(10))
-    ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
+    ax.zaxis.set_major_formatter(FormatStrFormatter('%.1f'))
     if use_colorbar:
         fig.colorbar(surf, shrink=0.5, aspect=5)
 
     ax.set_xlabel('q')
     ax.set_ylabel('p')
-    ax.set_zlabel(plot_type)
+    # ax.set_zlabel(plot_type)
     ax.view_init(*angle)
     return fig, ax
