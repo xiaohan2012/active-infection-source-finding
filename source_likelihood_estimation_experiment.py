@@ -30,7 +30,7 @@ def source_likelihood_given_single_obs(g, o, t, N):
 
 
 def source_likelihood_ratios_and_dists(g, p, q, N1, N2,
-                                       inf_time_3d_by_p,
+                                       inf_time_3d,
                                        estimation_method,
                                        time_weight_func='linear',
                                        debug=True):
@@ -47,31 +47,33 @@ def source_likelihood_ratios_and_dists(g, p, q, N1, N2,
         source, obs_nodes, infection_times, _ = make_partial_cascade(g, q, 'uniform')
         sources.append(source)
 
-        source_estimation_params = (g.number_of_nodes(),
-                                    obs_nodes, inf_time_3d_by_p,
-                                    infection_times,
-                                    N2)
+        source_estimation_params = {
+            'n_nodes': g.number_of_nodes(),
+            'obs_nodes': obs_nodes,
+            'inf_time_3d': inf_time_3d,
+            'infection_times': infection_times,
+            'N2': N2}
         if estimation_method == '1st':
             source_likelihood = source_likelihood_1st_order(
-                *source_estimation_params)
+                **source_estimation_params)
         elif estimation_method == '1st_time':
             source_likelihood = source_likelihood_1st_order_weighted_by_time(
-                *source_estimation_params,
+                **source_estimation_params,
                 time_weight_func=time_weight_func)
         elif estimation_method == 'drs':
             source_likelihood = source_likelihood_drs(
-                *source_estimation_params)
+                **source_estimation_params)
         elif estimation_method == 'drs_time_early':
             source_likelihood = source_likelihood_drs_time_weight(
-                *source_estimation_params,
+                **source_estimation_params,
                 which_node_time='early')
         elif estimation_method == 'drs_time_late':
             source_likelihood = source_likelihood_drs_time_weight(
-                *source_estimation_params,
+                **source_estimation_params,
                 which_node_time='late')
         elif estimation_method == 'drs_time_mean':
             source_likelihood = source_likelihood_drs_time_weight(
-                *source_estimation_params,
+                **source_estimation_params,
                 which_node_time='mean')
         else:
             raise ValueError('unsupported source estimation method')

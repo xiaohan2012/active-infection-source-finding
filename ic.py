@@ -387,12 +387,12 @@ def simulated_infection_time_3d(g, n_rounds):
     return np.dstack(array_list)
 
 
-def source_likelihood_1st_order(n_nodes, obs_nodes, inf_time_3d_by_p,
+def source_likelihood_1st_order(n_nodes, obs_nodes, inf_time_3d,
                                 infection_times,
                                 N2, eps=1):
     source_likelihood = np.ones(n_nodes, dtype=np.float64)
     for o in obs_nodes:
-        single_probas = ((np.sum(inf_time_3d_by_p[:, o, :] == infection_times[o], axis=1) + eps)
+        single_probas = ((np.sum(inf_time_3d[:, o, :] == infection_times[o], axis=1) + eps)
                          / (N2 + eps))
         source_likelihood *= single_probas
         source_likelihood /= source_likelihood.sum()

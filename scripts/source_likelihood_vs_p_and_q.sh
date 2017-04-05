@@ -5,7 +5,7 @@ gtypes=(kr-rand kr-peri kr-hier balanced-tree er barabasi)
 # exps=(6 7 8 9)
 exps=(6)
 # methods=(1st 1st_time drs)
-methods=(drs)
+# methods=(drs)
 methods=(drs_time_early drs_time_late drs_time_mean)
 
 for method in $methods; do

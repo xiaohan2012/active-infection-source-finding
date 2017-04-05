@@ -7,7 +7,7 @@ from plot_utils import plot_source_likelihood_surface as plot_surface
 
 param = '2-6'
 graphs = ['er', 'barabasi', 'kr-hier', 'kr-peri', 'kr-rand', 'balanced-tree']
-methods = ['1st', '1st_time']
+methods = ['1st', '1st_time', 'drs']
 dirnames = list(map(lambda m: 'source-likelihood-{}'.format(m),
                     methods))
 fig_dirname = 'source-likelihood-on-graphs-2-6'
