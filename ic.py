@@ -542,13 +542,14 @@ def source_likelihood_quad_time_difference(
                 np.isinf(inf_time_3d[:, o1, :]),
                 np.isinf(inf_time_3d[:, o2, :])))
         counts = np.sum(sim_mask, axis=1)
-        time_means = (np.sum((inf_time_3d[:, o1, :] - inf_time_3d[:, o2, :]) * sim_mask,
+        diff_means = (np.sum((inf_time_3d[:, o1, :] - inf_time_3d[:, o2, :]) * sim_mask,
                              axis=1)
                       / counts)
-        actual_mean = t1 - t2
+        actual_diff = t1 - t2
         # normalizer = np.power(sp_len[:, o1] - sp_len[:, o2], 2)
         # penalty = np.power(actual_mean - time_means, 2) / normalizer
-        penalty = np.absolute(actual_mean - time_means)
+        penalty = (np.power(actual_diff - diff_means, 2) /
+                   (np.power(sp_len[:, o1], 2) + np.power(sp_len[:, o2], 2)))
 
         source_likelihood *= (1 - penalty / np.max(penalty))
         source_likelihood /= source_likelihood.sum()

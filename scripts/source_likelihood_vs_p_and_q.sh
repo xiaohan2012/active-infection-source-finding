@@ -7,7 +7,8 @@ exps=(6)
 # methods=(1st 1st_time drs)
 # methods=(drs)
 # methods=(drs_time_early drs_time_late drs_time_mean)
-methods=(pair_order)
+# methods=(pair_order)
+methods=(time_diff)
 
 for method in $methods; do
     for exp in $exps; do

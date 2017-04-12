@@ -111,7 +111,7 @@ if __name__ == '__main__':
         N1 = 10
         N2 = 10
     else:
-        N1 = 500  # experiment round
+        N1 = 100  # experiment round
         N2 = 500  # simulation rounds
 
     g = load_data_by_gtype(gtype, param)[0]

@@ -1,4 +1,3 @@
-
 # coding: utf-8
 
 # In[31]:
@@ -13,7 +12,8 @@ from matplotlib import pyplot as plt
 param = '2-6'
 
 graphs = ['er', 'barabasi', 'kr-hier', 'kr-peri', 'kr-rand', 'balanced-tree']
-methods = ['1st', '1st_time', 'drs', 'drs_time_early', 'drs_time_late', 'drs_time_mean']
+methods = ['1st', '1st_time', 'drs', 'drs_time_early', 'pair_order']
+
 dirnames = list(map(lambda m: 'source-likelihood-{}'.format(m),
                     methods))
 output_dir = 'figs/source-likelihood-comparison-2d/'
@@ -27,7 +27,7 @@ def main(plot_type, dirnames, param, ps_as_x):
         os.makedirs(output_dir)
     
     xs = np.linspace(0.1, 1.0, 10)
-    zs = np.linspace(0.2, 1.0, 5)
+    zs = np.linspace(0.2, 1.0, 3)
     orig_zs = np.linspace(0.1, 1.0, 10)
     
     per_size, nrow, ncol = 5, len(graphs), len(zs)
