@@ -13,11 +13,11 @@ from ic import sample_graph_from_infection, make_partial_cascade, simulated_infe
     source_likelihood_merging_neighbor_pair, \
     source_likelihood_1st_order_weighted_by_time, \
     source_likelihood_drs, \
-    source_likelihood_drs_time_weight
+    source_likelihood_drs_time_weight, \
+    source_likelihood_pair_order, \
+    source_likelihood_quad_time_difference
 from graph_generator import add_p_and_delta
 
-
-# In[41]:
 
 def source_likelihood_given_single_obs(g, o, t, N):
     matching_count = np.zeros(g.number_of_nodes(), dtype=np.float64)
@@ -75,6 +75,15 @@ def source_likelihood_ratios_and_dists(g, p, q, N1, N2,
             source_likelihood = source_likelihood_drs_time_weight(
                 **source_estimation_params,
                 which_node_time='mean')
+        elif estimation_method == 'pair_order':
+            source_likelihood = source_likelihood_pair_order(
+                **source_estimation_params)
+        elif estimation_method == 'time_diff':
+            from utils import sp_len_2d
+            sp_len = sp_len_2d(g)
+            source_likelihood = source_likelihood_quad_time_difference(
+                **source_estimation_params,
+                sp_len=sp_len)
         else:
             raise ValueError('unsupported source estimation method')
         
@@ -97,7 +106,7 @@ if __name__ == '__main__':
     estimation_method = sys.argv[3]
 
     DEBUG = False
-
+    
     if DEBUG:
         N1 = 10
         N2 = 10

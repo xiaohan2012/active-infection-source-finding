@@ -502,6 +502,59 @@ def source_likelihood_drs(n_nodes, obs_nodes, inf_time_3d,
     return source_likelihood
 
 
+def source_likelihood_pair_order(n_nodes, obs_nodes, inf_time_3d,
+                                 infection_times,
+                                 N2, eps=1e-5):
+    source_likelihood = np.ones(n_nodes, dtype=np.float64)
+    obs_nodes = list(obs_nodes)
+    for o1, o2 in itertools.combinations(obs_nodes, 2):
+        # assumes both o1 and o2 are **infected**
+        t1, t2 = infection_times[o1], infection_times[o2]
+        # need to filter out pairs where at least one node is uninfected
+        sim_mask = np.invert(
+            np.logical_or(
+                np.isinf(inf_time_3d[:, o1, :]),
+                np.isinf(inf_time_3d[:, o2, :])))
+        counts = np.sum(sim_mask, axis=1)
+        effective_matches = (((inf_time_3d[:, o1, :] < inf_time_3d[:, o2, :])
+                             == (t1 < t2))
+                             * sim_mask)
+        probas = ((np.sum(effective_matches, axis=1) + eps)
+                  / (counts + eps))
+        source_likelihood *= probas
+        source_likelihood /= source_likelihood.sum()
+    return source_likelihood
+
+
+def source_likelihood_quad_time_difference(
+        n_nodes, obs_nodes, inf_time_3d,
+        infection_times,
+        N2,
+        sp_len,
+        eps=1e-5):
+    source_likelihood = np.ones(n_nodes, dtype=np.float64)
+    obs_nodes = list(obs_nodes)
+
+    for o1, o2 in itertools.combinations(obs_nodes, 2):
+        t1, t2 = infection_times[o1], infection_times[o2]
+        sim_mask = np.invert(
+            np.logical_or(
+                np.isinf(inf_time_3d[:, o1, :]),
+                np.isinf(inf_time_3d[:, o2, :])))
+        counts = np.sum(sim_mask, axis=1)
+        time_means = (np.sum((inf_time_3d[:, o1, :] - inf_time_3d[:, o2, :]) * sim_mask,
+                             axis=1)
+                      / counts)
+        actual_mean = t1 - t2
+        # normalizer = np.power(sp_len[:, o1] - sp_len[:, o2], 2)
+        # penalty = np.power(actual_mean - time_means, 2) / normalizer
+        penalty = np.absolute(actual_mean - time_means)
+
+        source_likelihood *= (1 - penalty / np.max(penalty))
+        source_likelihood /= source_likelihood.sum()
+    return source_likelihood
+
+
 def source_likelihood_drs_time_weight(n_nodes, obs_nodes, inf_time_3d,
                                       infection_times,
                                       which_node_time,

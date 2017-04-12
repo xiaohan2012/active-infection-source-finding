@@ -96,3 +96,12 @@ def chunks(l, n):
     """Yield successive n-sized chunks from l."""
     for i in range(0, len(l), n):
         yield l[i:i + n]
+
+
+def sp_len_2d(g, dtype=np.float64):
+    n = g.number_of_nodes()
+    d = np.zeros((n, n), dtype=dtype)
+    sp_len = nx.shortest_path_length(g)
+    for i in np.arange(n):
+        d[i, :] = [sp_len[i][j] for j in np.arange(n)]
+    return d
