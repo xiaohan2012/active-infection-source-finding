@@ -13,11 +13,11 @@ from ic import sample_graph_from_infection, make_partial_cascade, simulated_infe
     source_likelihood_merging_neighbor_pair, \
     source_likelihood_1st_order_weighted_by_time, \
     source_likelihood_drs, \
-    source_likelihood_drs_time_weight, \
     source_likelihood_pair_order, \
     source_likelihood_quad_time_difference
 from graph_generator import add_p_and_delta
-
+from utils import sp_len_2d
+            
 
 def source_likelihood_given_single_obs(g, o, t, N):
     matching_count = np.zeros(g.number_of_nodes(), dtype=np.float64)
@@ -53,6 +53,7 @@ def source_likelihood_ratios_and_dists(g, p, q, N1, N2,
             'inf_time_3d': inf_time_3d,
             'infection_times': infection_times,
             'N2': N2}
+
         if estimation_method == '1st':
             source_likelihood = source_likelihood_1st_order(
                 **source_estimation_params)
@@ -64,26 +65,28 @@ def source_likelihood_ratios_and_dists(g, p, q, N1, N2,
             source_likelihood = source_likelihood_drs(
                 **source_estimation_params)
         elif estimation_method == 'drs_time_early':
-            source_likelihood = source_likelihood_drs_time_weight(
-                **source_estimation_params,
-                which_node_time='early')
-        elif estimation_method == 'drs_time_late':
-            source_likelihood = source_likelihood_drs_time_weight(
-                **source_estimation_params,
-                which_node_time='late')
-        elif estimation_method == 'drs_time_mean':
-            source_likelihood = source_likelihood_drs_time_weight(
-                **source_estimation_params,
-                which_node_time='mean')
+            pass
         elif estimation_method == 'pair_order':
             source_likelihood = source_likelihood_pair_order(
                 **source_estimation_params)
-        elif estimation_method == 'time_diff':
-            from utils import sp_len_2d
+        elif estimation_method == 'time_diff_dist_sum_quad':
             sp_len = sp_len_2d(g)
             source_likelihood = source_likelihood_quad_time_difference(
                 **source_estimation_params,
                 sp_len=sp_len)
+        elif estimation_method == 'time_diff_dist_diff_quad':
+            from ic import source_likelihood_quad_time_difference_normalized_by_dist_diff
+            sp_len = sp_len_2d(g)
+            source_likelihood = source_likelihood_quad_time_difference_normalized_by_dist_diff(
+                **source_estimation_params,
+                sp_len=sp_len)
+        elif estimation_method == 'time_diff_dist_diff_abs':
+            from ic import source_likelihood_abs_time_difference_normalized_by_dist_diff
+            sp_len = sp_len_2d(g)
+            source_likelihood = source_likelihood_abs_time_difference_normalized_by_dist_diff(
+                **source_estimation_params,
+                sp_len=sp_len)
+            
         else:
             raise ValueError('unsupported source estimation method')
         
@@ -97,7 +100,8 @@ def source_likelihood_ratios_and_dists(g, p, q, N1, N2,
     ratios = source_llh / source_likelihood_array.max(axis=1)
     return {
         'ratio': pd.Series(ratios[np.invert(np.isnan(ratios))]).describe(),
-        'dist': pd.Series(dist_array).describe()
+        'dist': pd.Series(dist_array).describe(),
+        'mu-src': pd.Series(source_llh).describe(),
     }
 
 if __name__ == '__main__':
@@ -109,7 +113,7 @@ if __name__ == '__main__':
     
     if DEBUG:
         N1 = 10
-        N2 = 10
+        N2 = 500
     else:
         N1 = 100  # experiment round
         N2 = 500  # simulation rounds

@@ -487,17 +487,56 @@ def source_likelihood_1st_order_weighted_by_time(
     return source_likelihood
 
 
+def precondition_mask_and_count(o1, o2, inf_time_3d):
+    sim_mask = np.invert(
+        np.logical_or(
+            inf_time_3d[:, o1, :] == -1,
+            inf_time_3d[:, o2, :] == -1))
+    counts = np.sum(sim_mask, axis=1)
+    return sim_mask, counts
+
+
 def source_likelihood_drs(n_nodes, obs_nodes, inf_time_3d,
                           infection_times,
-                          N2, eps=1):
-    source_likelihood = np.ones(n_nodes, dtype=np.float64)
+                          N2,
+                          use_time_weight=False,
+                          use_preconditioning=True,
+                          eps=1e-1):
+    times = np.array([infection_times[o] for o in obs_nodes])
+    t_max, t_min = times.max(), times.min()
+    
+    if use_time_weight:
+        def weight_func(t):
+            if t_max == t_min:
+                return 0
+            else:
+                return (t - t_min) / (t_max - t_min)
+    
+    source_likelihood = np.ones(n_nodes, dtype=np.float64) / n_nodes
     obs_nodes = list(obs_nodes)
     for o1, o2 in itertools.combinations(obs_nodes, 2):
         t1, t2 = infection_times[o1], infection_times[o2]
-        probas = ((np.sum((inf_time_3d[:, o1, :] - inf_time_3d[:, o2, :]) == (t1 - t2), axis=1)
-                   + eps)
-                  / (N2 + eps))
-        source_likelihood *= probas
+        if use_preconditioning:
+            sim_mask, counts = precondition_mask_and_count(o1, o2, inf_time_3d)
+
+            probas = (np.sum(((inf_time_3d[:, o1, :] - inf_time_3d[:, o2, :]) == (t1 - t2)) * sim_mask,
+                             axis=1)
+                      / counts)
+            probas[np.isnan(probas)] = 0
+        else:
+            probas = (np.sum(
+                (inf_time_3d[:, o1, :] - inf_time_3d[:, o2, :]) == (t2 - t1), axis=1)
+                      / N2)
+        if False:
+            print('t1={}, t2={}'.format(t1, t2))
+            print('source proba: {:.2f}'.format(probas[source]+eps))
+            print('obs probas: {}'.format([probas[obs]+eps for obs in set(obs_nodes)-{source}]))
+
+        if use_time_weight:
+            weight = weight_func(min(t1, t2))
+            source_likelihood *= ((probas + weight) / 2 + eps)
+        else:
+            source_likelihood *= (probas + eps)
         source_likelihood /= source_likelihood.sum()
     return source_likelihood
 
@@ -505,23 +544,18 @@ def source_likelihood_drs(n_nodes, obs_nodes, inf_time_3d,
 def source_likelihood_pair_order(n_nodes, obs_nodes, inf_time_3d,
                                  infection_times,
                                  N2, eps=1e-5):
-    source_likelihood = np.ones(n_nodes, dtype=np.float64)
+    source_likelihood = np.ones(n_nodes, dtype=np.float64) / n_nodes
     obs_nodes = list(obs_nodes)
     for o1, o2 in itertools.combinations(obs_nodes, 2):
         # assumes both o1 and o2 are **infected**
         t1, t2 = infection_times[o1], infection_times[o2]
-        # need to filter out pairs where at least one node is uninfected
-        sim_mask = np.invert(
-            np.logical_or(
-                np.isinf(inf_time_3d[:, o1, :]),
-                np.isinf(inf_time_3d[:, o2, :])))
-        counts = np.sum(sim_mask, axis=1)
+        sim_mask, counts = precondition_mask_and_count(o1, o2, inf_time_3d)
         effective_matches = (((inf_time_3d[:, o1, :] < inf_time_3d[:, o2, :])
                              == (t1 < t2))
                              * sim_mask)
-        probas = ((np.sum(effective_matches, axis=1) + eps)
-                  / (counts + eps))
-        source_likelihood *= probas
+        probas = (np.sum(effective_matches, axis=1) / counts)
+        probas[np.isnan(probas)] = 0
+        source_likelihood *= (probas + eps)
         source_likelihood /= source_likelihood.sum()
     return source_likelihood
 
@@ -532,62 +566,85 @@ def source_likelihood_quad_time_difference(
         N2,
         sp_len,
         eps=1e-5):
-    source_likelihood = np.ones(n_nodes, dtype=np.float64)
+    source_likelihood = np.ones(n_nodes, dtype=np.float64) / n_nodes
     obs_nodes = list(obs_nodes)
 
     for o1, o2 in itertools.combinations(obs_nodes, 2):
         t1, t2 = infection_times[o1], infection_times[o2]
-        sim_mask = np.invert(
-            np.logical_or(
-                np.isinf(inf_time_3d[:, o1, :]),
-                np.isinf(inf_time_3d[:, o2, :])))
-        counts = np.sum(sim_mask, axis=1)
+        sim_mask, counts = precondition_mask_and_count(o1, o2, inf_time_3d)
         diff_means = (np.sum((inf_time_3d[:, o1, :] - inf_time_3d[:, o2, :]) * sim_mask,
                              axis=1)
                       / counts)
         actual_diff = t1 - t2
-        # normalizer = np.power(sp_len[:, o1] - sp_len[:, o2], 2)
-        # penalty = np.power(actual_mean - time_means, 2) / normalizer
         penalty = (np.power(actual_diff - diff_means, 2) /
                    (np.power(sp_len[:, o1], 2) + np.power(sp_len[:, o2], 2)))
 
-        source_likelihood *= (1 - penalty / np.max(penalty))
+        probas = (1 - penalty / np.max(penalty))
+        # **questionabl**, what if no non-inf pair is found , does it mean we penalize all?
+        probas[np.isnan(probas)] = 0
+        source_likelihood *= (probas + eps)
         source_likelihood /= source_likelihood.sum()
     return source_likelihood
 
 
-def source_likelihood_drs_time_weight(n_nodes, obs_nodes, inf_time_3d,
-                                      infection_times,
-                                      which_node_time,
-                                      N2, eps=1):
-    source_likelihood = np.ones(n_nodes, dtype=np.float64)
+def source_likelihood_quad_time_difference_normalized_by_dist_diff(
+        n_nodes, obs_nodes, inf_time_3d,
+        infection_times,
+        N2,
+        sp_len,
+        eps=1e-5):
+    source_likelihood = np.ones(n_nodes, dtype=np.float64) / n_nodes
     obs_nodes = list(obs_nodes)
 
-    times = np.array([infection_times[o] for o in obs_nodes])
-    t_max, t_min = times.max(), times.min()
-
-    def weight_func(t):
-        if t_max == t_min:
-            return 0
-        else:
-            return (t - t_min) / (t_max - t_min)
-    
     for o1, o2 in itertools.combinations(obs_nodes, 2):
         t1, t2 = infection_times[o1], infection_times[o2]
+        sim_mask, counts = precondition_mask_and_count(o1, o2, inf_time_3d)
 
-        if which_node_time == 'early':
-            time = min(t1, t2)
-        elif which_node_time == 'late':
-            time = max(t1, t2)
-        elif which_node_time == 'mean':
-            time = (t1 + t2) / 2
-        time_weight = weight_func(time)
+        diff_means = (np.sum((inf_time_3d[:, o1, :] - inf_time_3d[:, o2, :]) * sim_mask,
+                             axis=1)
+                      / counts)
+        actual_diff = t1 - t2
+        penalty = (np.power(actual_diff - diff_means, 2) /
+                   (np.power(sp_len[:, o1] - sp_len[:, o2], 2) + 1.))
 
-        probas = (((np.sum((inf_time_3d[:, o1, :] - inf_time_3d[:, o2, :]) == (t1 - t2), axis=1)
-                   + eps)
-                  / (N2 + eps)) +
-                  time_weight) / 2
-        source_likelihood *= probas
+        probas = 1 - penalty / np.max(penalty)
+        probas[np.isnan(probas)] = 0  # also questionable
+
+        source_likelihood *= (probas + eps)
         source_likelihood /= source_likelihood.sum()
+
+        if False:
+            import warnings
+            with warnings.catch_warnings():
+                warnings.filterwarnings('error')
+                try:
+                    pass
+                except Warning as e:
+                    pass
     return source_likelihood
 
+
+def source_likelihood_abs_time_difference_normalized_by_dist_diff(
+        n_nodes, obs_nodes, inf_time_3d,
+        infection_times,
+        N2,
+        sp_len,
+        eps=1e-5):
+    source_likelihood = np.ones(n_nodes, dtype=np.float64) / n_nodes
+    obs_nodes = list(obs_nodes)
+
+    for o1, o2 in itertools.combinations(obs_nodes, 2):
+        t1, t2 = infection_times[o1], infection_times[o2]
+        sim_mask, counts = precondition_mask_and_count(o1, o2, inf_time_3d)
+
+        diff_means = (np.sum((inf_time_3d[:, o1, :] - inf_time_3d[:, o2, :]) * sim_mask,
+                             axis=1)
+                      / counts)
+        actual_diff = t1 - t2
+        penalty = (np.absolute(actual_diff - diff_means) /
+                   (np.absolute(sp_len[:, o1] - sp_len[:, o2]) + 1))
+        probas = 1 - penalty / np.max(penalty)
+        probas[np.isnan(probas)] = 0  # also questionable
+        source_likelihood *= (probas + eps)
+        source_likelihood /= source_likelihood.sum()
+    return source_likelihood

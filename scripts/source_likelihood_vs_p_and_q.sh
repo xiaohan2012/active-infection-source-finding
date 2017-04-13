@@ -8,7 +8,8 @@ exps=(6)
 # methods=(drs)
 # methods=(drs_time_early drs_time_late drs_time_mean)
 # methods=(pair_order)
-methods=(time_diff)
+# methods=(time_diff)
+methods=(drs pair_order time_diff_dist_sum_quad time_diff_dist_diff_quad time_diff_dist_diff_abs)
 
 for method in $methods; do
     for exp in $exps; do
