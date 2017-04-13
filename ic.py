@@ -501,7 +501,10 @@ def source_likelihood_drs(n_nodes, obs_nodes, inf_time_3d,
                           N2,
                           use_time_weight=False,
                           use_preconditioning=True,
-                          eps=1e-1):
+                          source=None,
+                          debug=False,
+                          eps=1e-3,
+                          nan_proba=0.1):
     times = np.array([infection_times[o] for o in obs_nodes])
     t_max, t_min = times.max(), times.min()
     
@@ -522,15 +525,15 @@ def source_likelihood_drs(n_nodes, obs_nodes, inf_time_3d,
             probas = (np.sum(((inf_time_3d[:, o1, :] - inf_time_3d[:, o2, :]) == (t1 - t2)) * sim_mask,
                              axis=1)
                       / counts)
-            probas[np.isnan(probas)] = 0
+            probas[np.isnan(probas)] = nan_proba
         else:
             probas = (np.sum(
                 (inf_time_3d[:, o1, :] - inf_time_3d[:, o2, :]) == (t2 - t1), axis=1)
                       / N2)
-        if False:
+        if debug:
             print('t1={}, t2={}'.format(t1, t2))
-            print('source proba: {:.2f}'.format(probas[source]+eps))
-            print('obs probas: {}'.format([probas[obs]+eps for obs in set(obs_nodes)-{source}]))
+            print('source reward: {:.2f}'.format(probas[source]))
+            print('obs reward: {}'.format([probas[obs] for obs in set(obs_nodes)-{source}]))
 
         if use_time_weight:
             weight = weight_func(min(t1, t2))
@@ -565,7 +568,10 @@ def source_likelihood_quad_time_difference(
         infection_times,
         N2,
         sp_len,
-        eps=1e-5):
+        eps=1e-3,
+        nan_proba=0.1,
+        source=None,
+        debug=False):
     source_likelihood = np.ones(n_nodes, dtype=np.float64) / n_nodes
     obs_nodes = list(obs_nodes)
 
@@ -579,10 +585,23 @@ def source_likelihood_quad_time_difference(
         penalty = (np.power(actual_diff - diff_means, 2) /
                    (np.power(sp_len[:, o1], 2) + np.power(sp_len[:, o2], 2)))
 
-        probas = (1 - penalty / np.max(penalty))
+        non_nan_penalty = penalty[np.invert(np.isnan(penalty))]
+        if len(non_nan_penalty) == 0:
+            continue
+
+        max_value = non_nan_penalty.max()  # max of nan arrays gives nan
+        
+        probas = (1 - penalty / max_value)
+        if debug:
+            print('t1={}, t2={}'.format(t1, t2))
+            print('diff_means', diff_means)
+            print('source reward: {:.2f}'.format(probas[source]))
+            print('obs reward: {}'.format([probas[obs] for obs in set(obs_nodes)-{source}]))
+            
         # **questionabl**, what if no non-inf pair is found , does it mean we penalize all?
-        probas[np.isnan(probas)] = 0
+        probas[np.isnan(probas)] = nan_proba
         source_likelihood *= (probas + eps)
+
         source_likelihood /= source_likelihood.sum()
     return source_likelihood
 
