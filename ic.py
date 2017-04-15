@@ -1,18 +1,11 @@
 import math
 import networkx as nx
 import numpy as np
-import pandas as pd
-import os
-import pickle as pkl
-import fcntl
 import random
 import itertools
 
-from tempfile import NamedTemporaryFile
-from scipy.sparse import csr_matrix
+
 from joblib import Parallel, delayed
-from glob import glob
-from gzip import GzipFile
 from tqdm import tqdm
 from utils import chunks
 
@@ -68,7 +61,7 @@ def make_partial_cascade(g, fraction, sampling_method='uniform'):
         sub_idx = np.random.choice(idx, sample_size, replace=False)
         obs_nodes = set([infected_nodes[i] for i in sub_idx])
     elif sampling_method == 'late_nodes':
-        obs_nodes = set(sorted(infected_nodes, key=lambda n: -infection_times[n])[:sample_size])
+        obs_nodes = set(sorted(infected_nodes, key=lambda n: -infection_times[n])[:sample_size])0
     else:
         raise ValueError('unknown sampling methods')
 
@@ -76,7 +69,6 @@ def make_partial_cascade(g, fraction, sampling_method='uniform'):
     source = min(infection_times, key=lambda n: infection_times[n])
 
     return source, obs_nodes, infection_times, tree
-
 
 
 def sp_len_dict_to_2d_array(n, sp_len, dtype=np.int16):

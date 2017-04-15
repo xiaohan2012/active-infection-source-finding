@@ -13,4 +13,5 @@ for dataset in tqdm(('p2p-gnutella08', 'arxiv-hep-th',
         lcc = max(ccs, key=len)
         lcc_g = g.subgraph(lcc)
         lcc_g = nx.convert_node_labels_to_integers(lcc_g)
-        nx.write_gpickle(lcc_g, 'data/{}/graph.gpkl'.format(dataset))
+        # nx.write_gpickle(lcc_g, 'data/{}/graph.gpkl'.format(dataset))
+        nx.write_graphml(lcc_g, 'data/{}/graph.graphml'.format(dataset))

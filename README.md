@@ -205,3 +205,20 @@ Penalty definition: `abs(hmean - outcome)`
 
 - each job just load what it needs. Otherwise, data loading can be time consuming
 - parallel appending to the same file is fine. When the appended content is small (under `PIPE_BUF`), [no need to use file lock](http://stackoverflow.com/questions/1154446/is-file-append-atomic-in-unix)
+
+
+# Installing `graph-tool`
+
+- `sudo apt install -y libcgal-dev`
+- `sudo apt install -y libcairo2-dev`
+- `sudo apt install -y libcairomm-1.0`
+- `sudo apt install -y libcairomm-1.0-dev`
+- `sudo apt install -y python3-cairo`
+- `sudo apt install -y python3-cairo-dev`
+- `sudo apt install -y libsparsehash-dev`
+- also `python3-gi python3-click python3-gi-cairo python3-cairo gir1.2-gtk-3.0`
+
+Then:
+
+- `./configure  CXXFLAGS="-std=gnu++14"`
+- [https://git.skewed.de/count0/graph-tool/issues/359](the reason with the flag)
