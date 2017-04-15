@@ -121,7 +121,7 @@ def main():
         p = 0.88
         g = random_powerlaw_tree(size, tries=999999)
     elif gtype == B_TREE:
-        g = nx.balanced_tree(args.exponent_base, args.size_exponent)
+        g = nx.balanced_tree(args.exponent_base, args.size_exponent-1)
     elif gtype == ER:
         g = extract_larges_CC(nx.fast_gnp_random_graph(size, 0.1))
     elif gtype == BARABASI:
@@ -148,12 +148,9 @@ def main():
         os.makedirs(output_dir)
 
     print('graph type: {}'.format(gtype))
-    g = add_p_and_delta(g, p, delta)
-
-    if False:
-        time_probas, node2id, id2node = infection_time_estimation(g, args.n_rounds,
-                                                                  return_node2id=True)
+    # g = add_p_and_delta(g, p, delta)
     
+    nx.write_graphml(g, '{}/graph.graphml'.format(output_dir, gtype))
     nx.write_gpickle(g, '{}/graph.gpkl'.format(output_dir, gtype))
 
     if False:

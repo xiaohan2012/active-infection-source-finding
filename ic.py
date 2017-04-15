@@ -4,10 +4,14 @@ import numpy as np
 import random
 import itertools
 
+from graph_tool.all import GraphView, shortest_distance
 
 from joblib import Parallel, delayed
 from tqdm import tqdm
 from utils import chunks
+
+
+MAXINT = np.iinfo(np.int32).max
 
 
 def sample_graph_from_infection(g):
@@ -61,7 +65,7 @@ def make_partial_cascade(g, fraction, sampling_method='uniform'):
         sub_idx = np.random.choice(idx, sample_size, replace=False)
         obs_nodes = set([infected_nodes[i] for i in sub_idx])
     elif sampling_method == 'late_nodes':
-        obs_nodes = set(sorted(infected_nodes, key=lambda n: -infection_times[n])[:sample_size])0
+        obs_nodes = set(sorted(infected_nodes, key=lambda n: -infection_times[n])[:sample_size])
     else:
         raise ValueError('unknown sampling methods')
 
@@ -69,6 +73,67 @@ def make_partial_cascade(g, fraction, sampling_method='uniform'):
     source = min(infection_times, key=lambda n: infection_times[n])
 
     return source, obs_nodes, infection_times, tree
+
+
+def get_gvs(g, p, K):
+    """g: graph_tool.Graph
+    """
+    rands2d = np.random.random((K, g.num_edges()))
+    edge_masks2d = (rands2d <= p)
+    
+    gvs = []
+    for i in range(K):
+        p = g.new_edge_property('bool')
+        p.set_2d_array(edge_masks2d[i, :])
+        gvs.append(GraphView(g, efilt=p))
+    return gvs
+
+
+def activate_edges_by_p(g, p):
+    """
+    graph_tool version of sampling a graph
+    mask the edge according to probability p and return the masked graph"""
+    flags = (np.random.random(g.num_edges()) <= p)
+    p = g.new_edge_property('bool')
+    p.set_2d_array(flags)
+    g.set_edge_filter(p)
+    return g
+
+
+def simulate_cascade(g, p, source=None):
+    """
+    graph_tool version of simulating cascade
+    return np.ndarray on vertices as the infection time in cascade
+    uninfected node has dist -1
+    """
+    if source is None:
+        source = random.choice(np.arange(g.num_vertices(), dtype=int))
+    activate_edges_by_p(g, p)
+
+    dist = shortest_distance(g, source=g.vertex(source)).a
+    dist[dist == MAXINT] = -1
+    g.set_edge_filter(None)
+    return source, dist
+
+
+def observe_cascade(c, q, method='uniform'):
+    """graph_tool version of make_partial_cascade
+    """
+    all_infection = np.nonzero(c != -1)[0]
+    num_obs = int(math.ceil(all_infection.shape[0] * q))
+    if method == 'uniform':
+        return np.random.permutation(all_infection)[:num_obs]
+    elif method == 'late':
+        return np.argsort(c)[-num_obs:]
+
+
+def get_o2src_time(obs_nodes, gvs):
+    """graph_tool version of getting simulations results for observed nodes
+    """
+    o2src_time = {}
+    for o in obs_nodes:
+        o2src_time[o] = np.array([shortest_distance(gv, source=o).a for gv in gvs])
+    return o2src_time
 
 
 def sp_len_dict_to_2d_array(n, sp_len, dtype=np.int16):
@@ -208,7 +273,7 @@ def source_likelihood_drs(n_nodes, obs_nodes, inf_time_3d,
                           source=None,
                           debug=False,
                           eps=1e-3,
-                          nan_proba=0.1):
+                          nan_proba=1e-3):
     times = np.array([infection_times[o] for o in obs_nodes])
     t_max, t_min = times.max(), times.min()
     
@@ -368,6 +433,41 @@ def source_likelihood_abs_time_difference_normalized_by_dist_diff(
                    (np.absolute(sp_len[:, o1] - sp_len[:, o2]) + 1))
         probas = 1 - penalty / np.max(penalty)
         probas[np.isnan(probas)] = 0  # also questionable
+        source_likelihood *= (probas + eps)
+        source_likelihood /= source_likelihood.sum()
+    return source_likelihood
+
+
+def source_likelihood_drs_gt(
+        g, obs_nodes,
+        o2src_time,
+        infection_times,
+        source=None,
+        debug=False,
+        eps=1e-3,
+        nan_proba=1e-3):
+    """o2src_time: observed not to matrix,
+    the matrix is K by V simulations
+    """
+    num_nodes = g.num_vertices()
+    
+    source_likelihood = np.ones(num_nodes, dtype=np.float64)
+    obs_nodes = list(obs_nodes)
+    
+    for o1, o2 in itertools.combinations(obs_nodes, 2):
+        t1, t2 = infection_times[o1], infection_times[o2]
+
+        dists1, dists2 = o2src_time[o1], o2src_time[o2]
+        mask = np.logical_and(dists1 != MAXINT, dists2 != MAXINT)
+        counts = mask.sum(axis=0)
+        probas = (((dists1 - dists2) == (t1 - t2)) * mask).sum(axis=0) / counts
+        probas[np.isnan(probas)] = nan_proba
+        
+        if debug:
+            print('t1={}, t2={}'.format(t1, t2))
+            print('source reward: {:.2f}'.format(probas[source]))
+            print('obs reward: {}'.format([probas[obs] for obs in set(obs_nodes)-{source}]))
+
         source_likelihood *= (probas + eps)
         source_likelihood /= source_likelihood.sum()
     return source_likelihood
