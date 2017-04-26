@@ -33,7 +33,7 @@ def source_likelihood_given_single_obs(g, o, t, N):
         matching_count += (times == t)
     return matching_count / N
 
-@profile
+# @profile
 def source_likelihood_ratios_and_dists_gt(g,
                                           gvs, p, q, N1,
                                           estimation_method, debug=True):
@@ -169,7 +169,7 @@ if __name__ == '__main__':
     estimation_method = sys.argv[3]
 
     USE_GT = True
-    DEBUG = True
+    DEBUG = False
     
     if DEBUG:
         N1 = 10

@@ -519,3 +519,50 @@ def source_likelihood_order_gt(
         source_likelihood *= (probas + eps)
         source_likelihood /= source_likelihood.sum()
     return source_likelihood
+
+
+def source_likelihood_diff_distance_gt(
+        g, obs_nodes,
+        o2src_time,
+        infection_times,
+        source=None,
+        debug=False,
+        eps=1e-3,
+        nan_proba=1e-5):
+    """
+    using distance between actual time difference and the expectation as MWU signal
+
+    o2src_time: observed node to simulation matrix, it contains |obs_nodes| matrices
+    each matrix has size K by V
+    each row corresponds to one simulation and is the distance from observed node to all nodes
+    there are K simultions, so K rows
+    """
+    num_nodes = g.num_vertices()
+    
+    source_likelihood = np.ones(num_nodes, dtype=np.float64)
+    obs_nodes = list(obs_nodes)
+    
+    for o1, o2 in itertools.combinations(obs_nodes, 2):
+        t1, t2 = infection_times[o1], infection_times[o2]
+
+        dists1, dists2 = o2src_time[o1], o2src_time[o2]
+        mask = np.logical_and(dists1 != MAXINT, dists2 != MAXINT)  # condition on both nodes are infected
+        counts = mask.sum(axis=0)
+
+        diff_means = (np.sum((dists1 - dists2) * mask,
+                             axis=1)
+                      / counts)
+        actual_diff = t1 - t2
+        penalty = np.absolute(actual_diff - diff_means)
+        penalty = penalty / np.max(penalty)  # normalize to 1
+        probas = 1 - penalty  # invert
+        probas[np.isnan(probas)] = nan_proba
+
+        if debug:
+            print('t1={}, t2={}'.format(t1, t2))
+            print('source reward: {:.2f}'.format(probas[source]))
+            print('obs reward: {}'.format([probas[obs] for obs in set(obs_nodes)-{source}]))
+
+        source_likelihood *= (probas + eps)
+        source_likelihood /= source_likelihood.sum()
+    return source_likelihood
