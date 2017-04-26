@@ -89,15 +89,14 @@ def get_gvs(g, p, K):
     return gvs
 
 
-def activate_edges_by_p(g, p):
+def sample_graph_by_p(g, p):
     """
     graph_tool version of sampling a graph
     mask the edge according to probability p and return the masked graph"""
     flags = (np.random.random(g.num_edges()) <= p)
     p = g.new_edge_property('bool')
     p.set_2d_array(flags)
-    g.set_edge_filter(p)
-    return g
+    return GraphView(g, efilt=p)
 
 
 def simulate_cascade(g, p, source=None):
@@ -108,11 +107,10 @@ def simulate_cascade(g, p, source=None):
     """
     if source is None:
         source = random.choice(np.arange(g.num_vertices(), dtype=int))
-    activate_edges_by_p(g, p)
+    gv = sample_graph_by_p(g, p)
 
-    dist = shortest_distance(g, source=g.vertex(source)).a
+    dist = shortest_distance(gv, source=gv.vertex(source)).a
     dist[dist == MAXINT] = -1
-    g.set_edge_filter(None)
     return source, dist
 
 
@@ -257,6 +255,8 @@ def source_likelihood_1st_order_weighted_by_time(
 
 
 def precondition_mask_and_count(o1, o2, inf_time_3d):
+    """ensure that both nodes are infected in the same simulation
+    """
     sim_mask = np.invert(
         np.logical_or(
             inf_time_3d[:, o1, :] == -1,
@@ -445,9 +445,14 @@ def source_likelihood_drs_gt(
         source=None,
         debug=False,
         eps=1e-3,
-        nan_proba=1e-3):
-    """o2src_time: observed not to matrix,
-    the matrix is K by V simulations
+        nan_proba=1e-5):
+    """
+    using exact pair distance indicator function as MWU signal
+
+    o2src_time: observed node to simulation matrix, it contains |obs_nodes| matrices
+    each matrix has size K by V
+    each row corresponds to one simulation and is the distance from observed node to all nodes
+    there are K simultions, so K rows
     """
     num_nodes = g.num_vertices()
     
@@ -458,9 +463,52 @@ def source_likelihood_drs_gt(
         t1, t2 = infection_times[o1], infection_times[o2]
 
         dists1, dists2 = o2src_time[o1], o2src_time[o2]
-        mask = np.logical_and(dists1 != MAXINT, dists2 != MAXINT)
+        mask = np.logical_and(dists1 != MAXINT, dists2 != MAXINT)  # condition on both nodes are infected
         counts = mask.sum(axis=0)
         probas = (((dists1 - dists2) == (t1 - t2)) * mask).sum(axis=0) / counts
+        probas[np.isnan(probas)] = nan_proba
+        
+        if debug:
+            print('t1={}, t2={}'.format(t1, t2))
+            print('source reward: {:.2f}'.format(probas[source]))
+            print('obs reward: {}'.format([probas[obs] for obs in set(obs_nodes)-{source}]))
+
+        source_likelihood *= (probas + eps)
+        source_likelihood /= source_likelihood.sum()
+    return source_likelihood
+
+
+def source_likelihood_order_gt(
+        g, obs_nodes,
+        o2src_time,
+        infection_times,
+        source=None,
+        debug=False,
+        eps=1e-3,
+        nan_proba=1e-5):
+    """
+    using time order indicator function as MWU signal
+
+    o2src_time: observed node to simulation matrix, it contains |obs_nodes| matrices
+    each matrix has size K by V
+    each row corresponds to one simulation and is the distance from observed node to all nodes
+    there are K simultions, so K rows
+    """
+    num_nodes = g.num_vertices()
+    
+    source_likelihood = np.ones(num_nodes, dtype=np.float64)
+    obs_nodes = list(obs_nodes)
+    
+    for o1, o2 in itertools.combinations(obs_nodes, 2):
+        t1, t2 = infection_times[o1], infection_times[o2]
+
+        dists1, dists2 = o2src_time[o1], o2src_time[o2]
+        mask = np.logical_and(dists1 != MAXINT, dists2 != MAXINT)  # condition on both nodes are infected
+        counts = mask.sum(axis=0)
+
+        # only this line is different
+        probas = (((dists1 <= dists2) == (t1 <= t2)) * mask).sum(axis=0) / counts
+
         probas[np.isnan(probas)] = nan_proba
         
         if debug:

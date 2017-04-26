@@ -18,7 +18,8 @@ from ic import sample_graph_from_infection, make_partial_cascade, simulated_infe
     source_likelihood_quad_time_difference
 
 from ic import simulate_cascade, observe_cascade, \
-    get_o2src_time, source_likelihood_drs_gt, get_gvs
+    get_o2src_time, source_likelihood_drs_gt, get_gvs, \
+    source_likelihood_order_gt
 from graph_generator import add_p_and_delta
 from utils import sp_len_2d
 
@@ -32,7 +33,7 @@ def source_likelihood_given_single_obs(g, o, t, N):
         matching_count += (times == t)
     return matching_count / N
 
-
+@profile
 def source_likelihood_ratios_and_dists_gt(g,
                                           gvs, p, q, N1,
                                           estimation_method, debug=True):
@@ -43,18 +44,30 @@ def source_likelihood_ratios_and_dists_gt(g,
         iters = tqdm(range(N1))
     else:
         iters = range(N1)
+
+    simulation_cache = {}
     for i in iters:
         source, infection_times = simulate_cascade(g, p)
         obs_nodes = observe_cascade(infection_times, q, method='uniform')
+
+        # cache the simulation result
+        o2src_time = get_o2src_time(set(obs_nodes) - set(simulation_cache.keys()),
+                                    gvs)
+        simulation_cache.update(o2src_time)
+
         source_estimation_params_gt = {
             'g': g,
             'obs_nodes': obs_nodes,
-            'o2src_time': get_o2src_time(obs_nodes, gvs),
-            'infection_times': infection_times,
+            'o2src_time': simulation_cache,
+            'infection_times': infection_times
         }
+
         sources.append(source)
         if estimation_method == 'drs-gt':
             source_likelihood = source_likelihood_drs_gt(
+                **source_estimation_params_gt)
+        elif estimation_method == 'order-gt':
+            source_likelihood = source_likelihood_order_gt(
                 **source_estimation_params_gt)
         else:
             raise ValueError()
@@ -147,7 +160,7 @@ def source_likelihood_ratios_and_dists(g, p, q, N1, N2,
     return {
         'ratio': pd.Series(ratios[np.invert(np.isnan(ratios))]).describe(),
         'dist': pd.Series(dist_array).describe(),
-        'mu-src': pd.Series(source_llh).describe(),
+        'mu[s]': pd.Series(source_llh).describe(),
     }
 
 if __name__ == '__main__':
@@ -156,7 +169,7 @@ if __name__ == '__main__':
     estimation_method = sys.argv[3]
 
     USE_GT = True
-    DEBUG = False
+    DEBUG = True
     
     if DEBUG:
         N1 = 10
@@ -218,12 +231,15 @@ if __name__ == '__main__':
     ratio_mean = np.array([r['ratio']['mean'] for r in rows]).reshape((len(ps), len(qs)))
     dist_median = np.array([r['dist']['50%'] for r in rows]).reshape((len(ps), len(qs)))
     dist_mean = np.array([r['dist']['mean'] for r in rows]).reshape((len(ps), len(qs)))
+    mus_median = np.array([r['mu[s]']['50%'] for r in rows]).reshape((len(ps), len(qs)))
+    mus_mean = np.array([r['mu[s]']['mean'] for r in rows]).reshape((len(ps), len(qs)))
 
     dirname = 'outputs/source-likelihood-{}/{}'.format(
         estimation_method, gtype)
 
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
+    if not DEBUG:
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
 
-    np.savez(dirname + '/{}'.format(param),
-             X, Y, ratio_median, ratio_mean, dist_median, dist_mean)
+        np.savez(dirname + '/{}'.format(param),
+                 X, Y, ratio_median, ratio_mean, dist_median, dist_mean)
