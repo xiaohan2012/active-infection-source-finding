@@ -550,7 +550,7 @@ def source_likelihood_diff_distance_gt(
         counts = mask.sum(axis=0)
 
         diff_means = (np.sum((dists1 - dists2) * mask,
-                             axis=1)
+                             axis=0)
                       / counts)
         actual_diff = t1 - t2
         penalty = np.absolute(actual_diff - diff_means)
