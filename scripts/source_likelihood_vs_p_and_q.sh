@@ -1,6 +1,6 @@
 #! /bin/zsh
 
-gtypes=(kr-rand kr-peri kr-hier balanced-tree er barabasi)
+gtypes=(balanced-tree kr-rand kr-peri kr-hier)
 # gtypes=(barabasi)
 # exps=(6 7 8 9)
 exps=(6)

@@ -119,6 +119,8 @@ def observe_cascade(c, q, method='uniform'):
     """
     all_infection = np.nonzero(c != -1)[0]
     num_obs = int(math.ceil(all_infection.shape[0] * q))
+    if num_obs < 2:
+        num_obs = 2
     if method == 'uniform':
         return np.random.permutation(all_infection)[:num_obs]
     elif method == 'late':

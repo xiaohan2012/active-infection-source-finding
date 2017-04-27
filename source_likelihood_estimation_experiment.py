@@ -35,7 +35,7 @@ def source_likelihood_stat(g,
             obs_nodes = observe_cascade(infection_times, q, method='uniform')
             cascade_size = np.sum(infection_times != -1)
 
-            if cascade_size > 10:  # avoid small cascade
+            if cascade_size >= 5:  # avoid small cascade
                 break
         # cache the simulation result
         o2src_time = get_o2src_time(set(obs_nodes) - set(simulation_cache.keys()),

@@ -6,13 +6,16 @@ from matplotlib import pyplot as plt
 from plot_utils import plot_source_likelihood_surface as plot_surface
 
 param = '2-6'
-graphs = ['er', 'barabasi', 'kr-hier', 'kr-peri', 'kr-rand', 'balanced-tree']
-methods = ['1st', '1st_time',
-           'drs',
-           # 'drs_time_early',
-           'pair_order',
-           'time_diff',
-           'time_diff_dist_diff_quad']
+graphs = ['kr-hier', 'kr-peri', 'kr-rand', 'balanced-tree']
+methods = [
+    # '1st',
+    '1st_time',
+    'exact-None',
+    'exact-and',
+    'order-and',
+    'order-or',
+    'dist-and'
+]
 dirnames = list(map(lambda m: 'source-likelihood-{}'.format(m),
                     methods))
 fig_dirname = 'source-likelihood-on-graphs-2-6'
