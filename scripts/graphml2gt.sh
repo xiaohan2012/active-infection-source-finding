@@ -2,7 +2,7 @@
 
 gtypes=(kr-rand kr-peri kr-hier balanced-tree er barabasi)
 
-exp=6
+exp=9
 
 for gtype in $gtypes; do
     eval "python convert_graphml_to_gt.py $gtype/2-$exp"

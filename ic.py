@@ -438,14 +438,13 @@ def source_likelihood_abs_time_difference_normalized_by_dist_diff(
     return source_likelihood
 
 
-def source_likelihood_drs_gt(
-        g, obs_nodes,
-        o2src_time,
-        infection_times,
-        source=None,
-        debug=False,
-        eps=1e-3,
-        nan_proba=1e-5):
+def sll_using_pairs(g,
+                    obs_nodes,
+                    infection_times,
+                    o2src_time,
+                    method='exact', precond_method='and',
+                    eps=0.2, return_cascade=False,
+                    debug=False):
     """
     using exact pair distance indicator function as MWU signal
 
@@ -453,116 +452,73 @@ def source_likelihood_drs_gt(
     each matrix has size K by V
     each row corresponds to one simulation and is the distance from observed node to all nodes
     there are K simultions, so K rows
-    """
-    num_nodes = g.num_vertices()
+    """    
+    assert method in {'exact', 'order', 'order', 'dist'}
+    assert precond_method in {'and', 'or', None}
     
+    if method == 'dist':
+        sp_len_dict = {o: shortest_distance(g, source=o).a for o in obs_nodes}
+
+    num_nodes = g.num_vertices()
+
     source_likelihood = np.ones(num_nodes, dtype=np.float64)
     obs_nodes = list(obs_nodes)
-    
+
+    counts_list = []
+    rewards_list = []
+    pairs = []
+    all_true = np.asarray(np.ones(g.num_vertices()), dtype=bool)
     for o1, o2 in itertools.combinations(obs_nodes, 2):
         t1, t2 = infection_times[o1], infection_times[o2]
 
         dists1, dists2 = o2src_time[o1], o2src_time[o2]
-        mask = np.logical_and(dists1 != MAXINT, dists2 != MAXINT)  # condition on both nodes are infected
+        if precond_method is None:
+            mask = all_true
+        elif precond_method == 'or':
+            # condition on at least one node is infected
+            mask = np.logical_or(dists1 != MAXINT, dists2 != MAXINT)
+        elif precond_method == 'and':
+            # condition on both nodes are infected
+            mask = np.logical_and(dists1 != MAXINT, dists2 != MAXINT)
+
         counts = mask.sum(axis=0)
-        probas = (((dists1 - dists2) == (t1 - t2)) * mask).sum(axis=0) / counts
-        probas[np.isnan(probas)] = nan_proba
+
+        if method == 'exact':
+            probas = (((dists1 - dists2) == (t1 - t2)) * mask).sum(axis=0) / counts
+        elif method == 'order':
+            probas = (((dists1 <= dists2) == (t1 <= t2)) * mask).sum(axis=0) / counts
+        else:
+            diff_means = (np.sum((dists1 - dists2) * mask,
+                                 axis=0)
+                          / counts)
+            actual_diff = t1 - t2
+            penalty = (np.absolute(actual_diff - diff_means)
+                       / (np.absolute(sp_len_dict[o1] - sp_len_dict[o2]) + 1))
+            penalty = penalty / np.max(penalty)  # normalize to 1
+            probas = 1 - penalty  # invert
         
-        if debug:
-            print('t1={}, t2={}'.format(t1, t2))
-            print('source reward: {:.2f}'.format(probas[source]))
-            print('obs reward: {}'.format([probas[obs] for obs in set(obs_nodes)-{source}]))
-
-        source_likelihood *= (probas + eps)
-        source_likelihood /= source_likelihood.sum()
-    return source_likelihood
-
-
-def source_likelihood_order_gt(
-        g, obs_nodes,
-        o2src_time,
-        infection_times,
-        source=None,
-        debug=False,
-        eps=1e-3,
-        nan_proba=1e-5):
-    """
-    using time order indicator function as MWU signal
-
-    o2src_time: observed node to simulation matrix, it contains |obs_nodes| matrices
-    each matrix has size K by V
-    each row corresponds to one simulation and is the distance from observed node to all nodes
-    there are K simultions, so K rows
-    """
-    num_nodes = g.num_vertices()
-    
-    source_likelihood = np.ones(num_nodes, dtype=np.float64)
-    obs_nodes = list(obs_nodes)
-    
-    for o1, o2 in itertools.combinations(obs_nodes, 2):
-        t1, t2 = infection_times[o1], infection_times[o2]
-
-        dists1, dists2 = o2src_time[o1], o2src_time[o2]
-        mask = np.logical_and(dists1 != MAXINT, dists2 != MAXINT)  # condition on both nodes are infected
-        counts = mask.sum(axis=0)
-
-        # only this line is different
-        probas = (((dists1 <= dists2) == (t1 <= t2)) * mask).sum(axis=0) / counts
-
-        probas[np.isnan(probas)] = nan_proba
+        probas[np.isnan(probas)] = 0
         
-        if debug:
-            print('t1={}, t2={}'.format(t1, t2))
-            print('source reward: {:.2f}'.format(probas[source]))
-            print('obs reward: {}'.format([probas[obs] for obs in set(obs_nodes)-{source}]))
-
-        source_likelihood *= (probas + eps)
-        source_likelihood /= source_likelihood.sum()
-    return source_likelihood
-
-
-def source_likelihood_diff_distance_gt(
-        g, obs_nodes,
-        o2src_time,
-        infection_times,
-        source=None,
-        debug=False,
-        eps=1e-3,
-        nan_proba=1e-5):
-    """
-    using distance between actual time difference and the expectation as MWU signal
-
-    o2src_time: observed node to simulation matrix, it contains |obs_nodes| matrices
-    each matrix has size K by V
-    each row corresponds to one simulation and is the distance from observed node to all nodes
-    there are K simultions, so K rows
-    """
-    num_nodes = g.num_vertices()
-    
-    source_likelihood = np.ones(num_nodes, dtype=np.float64)
-    obs_nodes = list(obs_nodes)
-    
-    for o1, o2 in itertools.combinations(obs_nodes, 2):
-        t1, t2 = infection_times[o1], infection_times[o2]
-
-        dists1, dists2 = o2src_time[o1], o2src_time[o2]
-        mask = np.logical_and(dists1 != MAXINT, dists2 != MAXINT)  # condition on both nodes are infected
-        counts = mask.sum(axis=0)
-
-        diff_means = (np.sum((dists1 - dists2) * mask,
-                             axis=0)
-                      / counts)
-        actual_diff = t1 - t2
-        penalty = np.absolute(actual_diff - diff_means)
-        penalty = penalty / np.max(penalty)  # normalize to 1
-        probas = 1 - penalty  # invert
-        probas[np.isnan(probas)] = nan_proba
+        counts_list.append(counts)
+        rewards_list.append(probas)
+        pairs.append((o1, o2))
 
         if debug:
             print('t1={}, t2={}'.format(t1, t2))
             print('source reward: {:.2f}'.format(probas[source]))
             print('obs reward: {}'.format([probas[obs] for obs in set(obs_nodes)-{source}]))
 
-        source_likelihood *= (probas + eps)
+        source_likelihood *= (eps + (1-eps) * probas)
         source_likelihood /= source_likelihood.sum()
-    return source_likelihood
+
+    if not return_cascade:
+        return source_likelihood
+    else:
+        return {
+            'sll': source_likelihood,
+            'source': source,
+            'rs': np.array(rewards_list),
+            'pairs': pairs,
+            'obs_nodes': obs_nodes,
+            'infection_times': infection_times
+        }
