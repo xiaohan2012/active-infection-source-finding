@@ -166,7 +166,11 @@ if __name__ == '__main__':
     else:
         if not os.path.exists(dirname):
             os.makedirs(dirname)
-        path = dirname + '/{}'.format(param)
+
+        path = dirname
+        if param:
+            path += '/{}'.format(param)
+
     np.savez(path,
              X, Y,
              *data)
