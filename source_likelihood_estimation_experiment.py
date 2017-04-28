@@ -51,6 +51,7 @@ def source_likelihood_stat(g,
             o2src_time = get_o2src_time(obs_nodes,
                                         gvs,
                                         debug=debug)
+            simulation_cache = o2src_time
 
         source_estimation_params_gt = {
             'g': g,
@@ -158,6 +159,7 @@ if __name__ == '__main__':
             estimation_method=estimation_method,
             precond_method=precond_method,
             eps=eps,
+            cache_simulation=args.cache_sim,
             debug=DEBUG)
             for p in tqdm(ps) for q in qs]
 

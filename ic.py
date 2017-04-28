@@ -99,6 +99,12 @@ def sample_graph_by_p(g, p):
     return GraphView(g, efilt=p)
 
 
+def get_infection_time(g, source):
+    time = shortest_distance(g, source=source).a
+    time[time == MAXINT] = -1
+    return time
+
+
 def simulate_cascade(g, p, source=None):
     """
     graph_tool version of simulating cascade
@@ -109,9 +115,8 @@ def simulate_cascade(g, p, source=None):
         source = random.choice(np.arange(g.num_vertices(), dtype=int))
     gv = sample_graph_by_p(g, p)
 
-    dist = shortest_distance(gv, source=gv.vertex(source)).a
-    dist[dist == MAXINT] = -1
-    return source, dist
+    times = get_infection_time(gv, source)
+    return source, times
 
 
 def observe_cascade(c, q, method='uniform'):
@@ -136,9 +141,7 @@ def get_o2src_time(obs_nodes, gvs, debug=False):
     else:
         iters = obs_nodes
     for o in iters:
-        times = np.array([shortest_distance(gv, source=o).a for gv in gvs])
-        times[times == MAXINT] = -1
-        o2src_time[o] = times
+        o2src_time[o] = np.array([get_infection_time(gv, o) for gv in gvs])
     return o2src_time
 
 
