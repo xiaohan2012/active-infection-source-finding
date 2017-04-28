@@ -150,6 +150,14 @@ def plot_source_likelihood_surface(
         Z = bunch['arr_4']
     elif plot_type == 'dist_mean':
         Z = bunch['arr_5']
+    elif plot_type == 'mu_median':
+        Z = bunch['arr_6']
+    elif plot_type == 'mu_mean':
+        Z = bunch['arr_7']
+    elif plot_type == 'rank_median':
+        Z = bunch['arr_8']
+    elif plot_type == 'rank_mean':
+        Z = bunch['arr_9']
     else:
         raise ValueError('invalid plot_type')
 

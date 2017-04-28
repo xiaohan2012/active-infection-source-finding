@@ -11,8 +11,14 @@ from matplotlib import pyplot as plt
 
 param = '2-6'
 
-graphs = ['er', 'barabasi', 'kr-hier', 'kr-peri', 'kr-rand', 'balanced-tree']
-methods = ['1st_time', 'drs', 'pair_order', 'time_diff', 'time_diff_dist_diff_quad']
+graphs = ['kr-hier', 'kr-peri', 'kr-rand', 'balanced-tree']
+methods = [
+    'exact-None',
+    'exact-and',
+    'order-and',
+    'order-or',
+    'dist-and'
+]
 
 dirnames = list(map(lambda m: 'source-likelihood-{}'.format(m),
                     methods))
@@ -45,6 +51,14 @@ def main(plot_type, dirnames, param, ps_as_x):
             key = 'arr_4'
         elif plot_type == 'dist_mean':
             key = 'arr_5'
+        elif plot_type == 'mu_median':
+            key = 'arr_6'
+        elif plot_type == 'mu_mean':
+            key = 'arr_7'
+        elif plot_type == 'rank_median':
+            key = 'arr_8'
+        elif plot_type == 'rank_mean':
+            key = 'arr_9'
         else:
             raise ValueError('invalid plot_type')
         ms = [b[key] for b in bunches]
@@ -87,6 +101,7 @@ def main(plot_type, dirnames, param, ps_as_x):
 
 if __name__ == '__main__':
     from joblib import Parallel, delayed
-    types = ['ratio_median', 'ratio_mean', 'dist_median', 'dist_mean']
+    types = ['ratio_mean', 'ratio_median', 'dist_mean', 'dist_median',
+             'mu_mean', 'mu_median', 'rank_mean', 'rank_median']
     Parallel(n_jobs=-1)(delayed(main)(plot_type, dirnames, param, flag)
                         for plot_type in types for flag in [True, False])

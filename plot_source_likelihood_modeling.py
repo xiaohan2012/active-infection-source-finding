@@ -9,7 +9,7 @@ param = '2-6'
 graphs = ['kr-hier', 'kr-peri', 'kr-rand', 'balanced-tree']
 methods = [
     # '1st',
-    '1st_time',
+    # '1st_time',
     'exact-None',
     'exact-and',
     'order-and',
@@ -27,6 +27,8 @@ def main(plot_type):
     fig = plt.figure(figsize=(per_size * ncol, per_size * nrow))
 
     if plot_type.startswith('dist'):
+        angle = (10, 45)
+    elif plot_type.startswith('rank'):
         angle = (10, 45)
     else:
         angle = (15, 210)
@@ -58,5 +60,6 @@ def main(plot_type):
     fig.savefig(figpath)
 
 if __name__ == '__main__':
-    for t in ['ratio_mean', 'ratio_median', 'dist_mean', 'dist_median']:
+    for t in ['ratio_mean', 'ratio_median', 'dist_mean', 'dist_median',
+              'mu_mean', 'mu_median', 'rank_mean', 'rank_median']:
         main(t)
