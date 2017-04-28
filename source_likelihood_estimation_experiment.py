@@ -1,6 +1,5 @@
 # coding: utf-8
 import os
-import sys
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -37,9 +36,13 @@ def source_likelihood_stat(g,
 
             if cascade_size >= 5:  # avoid small cascade
                 break
+        if debug:
+            print('cascade size: {}'.format(cascade_size))
+
         # cache the simulation result
         o2src_time = get_o2src_time(set(obs_nodes) - set(simulation_cache.keys()),
-                                    gvs)
+                                    gvs,
+                                    debug=debug)
         simulation_cache.update(o2src_time)
 
         source_estimation_params_gt = {
@@ -86,7 +89,17 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--precond_method', default=None)
     parser.add_argument('-e', '--eps', type=float, default=0.2)
     parser.add_argument('-d', '--debug', action='store_true')
+    parser.add_argument('--n1', type=int, help="simulation rounds for parameter esimation", default=100)
+    parser.add_argument('--n2', type=int, help="experiment rounds", default=2)
 
+    parser.add_argument('--p1', type=float, help="start of p", default=0.2)
+    parser.add_argument('--p2', type=float, help="end of p", default=1.0)
+    parser.add_argument('--ps', type=float, help="step size of p", default=0.1)
+    
+    parser.add_argument('--q1', type=float, help="start of q", default=0.2)
+    parser.add_argument('--q2', type=float, help="end of q", default=1.0)
+    parser.add_argument('--qs', type=float, help="step size of q", default=0.1)
+    
     args = parser.parse_args()
     gtype = args.gtype
     param = args.param
@@ -97,17 +110,22 @@ if __name__ == '__main__':
     DEBUG = args.debug
     
     if DEBUG:
-        N1 = 10
-        N2 = 2
+        N1 = args.n1
+        N2 = args.n2
     else:
-        N1 = 100  # experiment round
-        N2 = 100  # simulation rounds
+        N1 = args.n1  # simulation rounds
+        N2 = args.n2  # experiment round
 
     g = load_graph('data/{}/{}/graph.gt'.format(gtype, param))
     print('|V|={}'.format(g.num_vertices()))
 
-    ps = np.linspace(0.2, 1.0, 10)
-    qs = np.linspace(0.1, 1.0, 10)
+    ps = np.arange(args.p1, args.p2 + 1e-10, args.ps)
+    qs = np.arange(args.q1, args.q2 + 1e-10, args.qs)
+
+    print('N1: {}'.format(N1))
+    print('N2: {}'.format(N2))
+    print('ps: {}'.format(ps))
+    print('qs: {}'.format(qs))
 
     p2gvs = {p: get_gvs(g, p, N2) for p in ps}
 
@@ -127,7 +145,7 @@ if __name__ == '__main__':
             estimation_method=estimation_method,
             precond_method=precond_method,
             eps=eps,
-            debug=False)
+            debug=DEBUG)
             for p in tqdm(ps) for q in qs]
 
     X, Y = np.meshgrid(ps, qs)

@@ -127,11 +127,15 @@ def observe_cascade(c, q, method='uniform'):
         return np.argsort(c)[-num_obs:]
 
 
-def get_o2src_time(obs_nodes, gvs):
+def get_o2src_time(obs_nodes, gvs, debug=False):
     """graph_tool version of getting simulations results for observed nodes
     """
     o2src_time = {}
-    for o in obs_nodes:
+    if debug:
+        iters = tqdm(obs_nodes)
+    else:
+        iters = obs_nodes
+    for o in iters:
         o2src_time[o] = np.array([shortest_distance(gv, source=o).a for gv in gvs])
     return o2src_time
 
@@ -470,7 +474,12 @@ def sll_using_pairs(g,
     rewards_list = []
     pairs = []
     all_true = np.asarray(np.ones(g.num_vertices()), dtype=bool)
-    for o1, o2 in itertools.combinations(obs_nodes, 2):
+
+    iters = itertools.combinations(obs_nodes, 2)
+    if debug:
+        iters = tqdm(iters)
+        
+    for o1, o2 in iters:
         t1, t2 = infection_times[o1], infection_times[o2]
 
         dists1, dists2 = o2src_time[o1], o2src_time[o2]
