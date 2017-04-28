@@ -17,6 +17,7 @@ def source_likelihood_stat(g,
                            estimation_method,
                            precond_method,
                            eps,
+                           cache_simulation=True,
                            debug=True):
     sll_array = []
     sources = []
@@ -26,8 +27,9 @@ def source_likelihood_stat(g,
         iters = tqdm(range(N1))
     else:
         iters = range(N1)
-        
-    simulation_cache = {}
+
+    if cache_simulation:
+        simulation_cache = {}
     for i in iters:
         while True:
             source, infection_times = simulate_cascade(g, p)
@@ -39,11 +41,16 @@ def source_likelihood_stat(g,
         if debug:
             print('cascade size: {}'.format(cascade_size))
 
-        # cache the simulation result
-        o2src_time = get_o2src_time(set(obs_nodes) - set(simulation_cache.keys()),
-                                    gvs,
-                                    debug=debug)
-        simulation_cache.update(o2src_time)
+        if cache_simulation:
+            # cache the simulation result
+            o2src_time = get_o2src_time(set(obs_nodes) - set(simulation_cache.keys()),
+                                        gvs,
+                                        debug=debug)
+            simulation_cache.update(o2src_time)
+        else:
+            o2src_time = get_o2src_time(obs_nodes,
+                                        gvs,
+                                        debug=debug)
 
         source_estimation_params_gt = {
             'g': g,
@@ -99,7 +106,11 @@ if __name__ == '__main__':
     parser.add_argument('--q1', type=float, help="start of q", default=0.2)
     parser.add_argument('--q2', type=float, help="end of q", default=1.0)
     parser.add_argument('--qs', type=float, help="step size of q", default=0.1)
-    
+
+    parser.add_argument('--n_jobs', type=int, default=-1, help="number of cores to use")
+    parser.add_argument('--cache_sim', action='store_true',
+                        help="whether caching simulation or not, if activated, can be memory consuming")
+
     args = parser.parse_args()
     gtype = args.gtype
     param = args.param
@@ -126,16 +137,18 @@ if __name__ == '__main__':
     print('N2: {}'.format(N2))
     print('ps: {}'.format(ps))
     print('qs: {}'.format(qs))
+    print('cache_simulation: {}'.format(args.cache_sim))
 
     p2gvs = {p: get_gvs(g, p, N2) for p in ps}
 
     if not DEBUG:
-        rows = Parallel(n_jobs=-1)(delayed(source_likelihood_stat)(
+        rows = Parallel(n_jobs=args.n_jobs)(delayed(source_likelihood_stat)(
             g,
             p2gvs[p], p, q, N1,
             estimation_method=estimation_method,
             precond_method=precond_method,
             eps=eps,
+            cache_simulation=args.cache_sim,
             debug=DEBUG)
                                    for p in tqdm(ps) for q in qs)
     else:

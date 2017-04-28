@@ -136,7 +136,9 @@ def get_o2src_time(obs_nodes, gvs, debug=False):
     else:
         iters = obs_nodes
     for o in iters:
-        o2src_time[o] = np.array([shortest_distance(gv, source=o).a for gv in gvs])
+        times = np.array([shortest_distance(gv, source=o).a for gv in gvs])
+        times[times == MAXINT] = -1
+        o2src_time[o] = times
     return o2src_time
 
 
@@ -487,10 +489,10 @@ def sll_using_pairs(g,
             mask = all_true
         elif precond_method == 'or':
             # condition on at least one node is infected
-            mask = np.logical_or(dists1 != MAXINT, dists2 != MAXINT)
+            mask = np.logical_or(dists1 != -1, dists2 != -1)
         elif precond_method == 'and':
             # condition on both nodes are infected
-            mask = np.logical_and(dists1 != MAXINT, dists2 != MAXINT)
+            mask = np.logical_and(dists1 != -1, dists2 != -1)
 
         counts = mask.sum(axis=0)
 
