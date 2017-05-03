@@ -23,6 +23,7 @@ def mwu(g, gvs,
         reward_method='exact',
         eps=0.2,
         max_iter=100,
+        use_uninfected=True,
         debug=False):
     if o2src_time is None:
         o2src_time = get_o2src_time(obs_nodes, gvs, debug=debug)
@@ -46,8 +47,15 @@ def mwu(g, gvs,
     iter_i = 0
     all_nodes = set(np.arange(g.num_vertices()))
     unqueried_nodes = all_nodes - set(obs_nodes)
+
+    obs_nodes = copy(obs_nodes)
+
     queried_nodes = set()
-    ref_nodes = set(obs_nodes)  # reference nodes to use for MWU
+
+    # reference nodes to use for MWU,
+    # required to be **infected**
+    ref_nodes = set(obs_nodes)
+
     nodes_to_use = []  # nodes coming from querying the neighbors
 
     while iter_i < max_iter:
@@ -59,7 +67,7 @@ def mwu(g, gvs,
             if active_method == MAX_MU:
                 q = max(unqueried_nodes, key=lambda n: sll[n])
             elif active_method == RANDOM:
-                q = random.choice(unqueried_nodes)
+                q = random.choice(list(unqueried_nodes))
             else:
                 raise ValueError('available query methods are {}'.format(MAX_MU))
 
@@ -72,35 +80,53 @@ def mwu(g, gvs,
                 print('using node from nodes_to_use')
             q = nodes_to_use.pop()
 
-        if reward_method == 'dist':
-            sp_len_dict[q] = shortest_distance(g, source=q).a
+        if infection_times[q] == -1 and use_uninfected:
+            # the query is uninfected
+            pass
+        else:
+            # the query is infected
+            if reward_method == 'dist':
+                sp_len_dict[q] = shortest_distance(g, source=q).a
 
-        o2src_time[q] = np.array([get_infection_time(gv, q) for gv in gvs])
+            o2src_time[q] = np.array([get_infection_time(gv, q) for gv in gvs])
 
-        for o in ref_nodes:
-            tq, to = infection_times[q], infection_times[o]
-            dists_q, dists_o = o2src_time[q], o2src_time[o]
-            mask = np.logical_and(dists_q != -1, dists_o != -1)
+            for o in ref_nodes:
+                tq, to = infection_times[q], infection_times[o]
+                dists_q, dists_o = o2src_time[q], o2src_time[o]
+                mask = np.logical_and(dists_q != -1, dists_o != -1)
 
-            if reward_method == 'exact':
-                probas = exact_rewards(tq, to, dists_q, dists_o, mask)
-            elif reward_method == 'order':
-                probas = order_rewards(tq, to, dists_q, dists_o, mask)
-            elif reward_method == 'dist':
-                try:
-                    probas = dist_rewards(tq, to, dists_q, dists_o, sp_len_dict[q], sp_len_dict[o], mask)
-                except ValueError:
-                    # zero-size array to reduction operation maximum which has no identity
-                    # ignore this iteration
-                    continue
-            else:
-                raise ValueError('methoder is unknown')
+                if reward_method == 'exact':
+                    probas = exact_rewards(tq, to, dists_q, dists_o, mask)
+                elif reward_method == 'order':
+                    probas = order_rewards(tq, to, dists_q, dists_o, mask)
+                elif reward_method == 'dist':
+                    try:
+                        probas = dist_rewards(
+                            tq, to,
+                            dists_q, dists_o,
+                            sp_len_dict[q], sp_len_dict[o],
+                            mask)
+                    except ValueError:
+                        # zero-size array to reduction operation maximum which has no identity
+                        # ignore this iteration
+                        continue
+                else:
+                    raise ValueError('methoder is unknown')
 
-            probas[np.isnan(probas)] = 0
-            sll *= (eps + (1-eps) * probas)
-            sll /= sll.sum()
+                probas[np.isnan(probas)] = 0
+                sll *= (eps + (1-eps) * probas)
+                sll /= sll.sum()
 
-        ref_nodes.add(q)
+            # when q is used for updating sll, add it to reference list
+            ref_nodes.add(q)
+
+            # if the query node infection time is no smaller than
+            # the current known earliest infection,
+            # it cannot be the source
+            min_inf_t = min(infection_times[n] for n in ref_nodes)
+            if infection_times[q] >= min_inf_t:
+                sll[q] = 0
+
         if debug:
             print('add q to ref_nodes (#nodes={})'.format(len(ref_nodes)))
             print('source current rank = {}'.format(get_rank_index(sll, source)))
@@ -109,14 +135,24 @@ def mwu(g, gvs,
         # query its neighbors
         winners = np.nonzero(sll == sll.max())[0]
         for w in winners:
-            nbrs = g.vertex(w).all_neighbours()
-            unqueried_neighbors = set(nbrs) - queried_nodes
+            nbrs = set(g.vertex(w).all_neighbours())
+            unqueried_neighbors = nbrs - queried_nodes
             nodes_to_use += list(unqueried_neighbors)
+            queried_nodes |= unqueried_neighbors
 
-            is_source = np.all([(infection_times[w] < infection_times[u])
-                                for u in nbrs])
+            if infection_times[w] != -1:
+                is_source = np.all([(infection_times[w] < infection_times[int(u)])
+                                    for u in nbrs])
+            else:
+                is_source = False
+
+            if debug:
+                print('checking source {} with winner {}'.format(source, w))
+                print('winner\'s time {}'.format(infection_times[w]))
+                print('winner\'s nbr infection time {}'.format([infection_times[int(u)] for u in nbrs]))
+
             if is_source:
-                query_count = len(queried_nodes - set(obs_nodes))
+                query_count = len(queried_nodes)
                 if debug:
                     print('**Found source and used {} queries'.format(query_count))
                 assert source == w

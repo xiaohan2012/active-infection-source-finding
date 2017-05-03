@@ -1,9 +1,11 @@
 import numpy as np
+import random
 from fixtures import tree_and_cascade
-from mwu import mwu, MAX_MU
+from mwu import mwu, MAX_MU, RANDOM
 
 
 def setup_module(module):
+    random.seed(123456)
     np.random.seed(123456)
 
 def run_mwu(method, tree_and_cascade):
@@ -22,4 +24,9 @@ def run_mwu(method, tree_and_cascade):
 def test_mwc_max_mu(tree_and_cascade):
     query_count = run_mwu(
         MAX_MU, tree_and_cascade)
-    assert query_count == 1
+    assert query_count == 4
+
+def test_mwc_random(tree_and_cascade):
+    query_count = run_mwu(
+        RANDOM, tree_and_cascade)
+    assert query_count == 4
