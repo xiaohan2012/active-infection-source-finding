@@ -119,13 +119,16 @@ def simulate_cascade(g, p, source=None):
     return source, times
 
 
-def observe_cascade(c, q, method='uniform'):
+def observe_cascade(c, source, q, method='uniform'):
     """graph_tool version of make_partial_cascade
     """
     all_infection = np.nonzero(c != -1)[0]
-    num_obs = int(math.ceil(all_infection.shape[0] * q))
+    all_infection = list(set(all_infection) - {source})
+    num_obs = int(math.ceil(len(all_infection) * q))
+
     if num_obs < 2:
         num_obs = 2
+
     if method == 'uniform':
         return np.random.permutation(all_infection)[:num_obs]
     elif method == 'late':
@@ -453,6 +456,7 @@ def sll_using_pairs(g,
                     obs_nodes,
                     infection_times,
                     o2src_time,
+                    source=None,
                     method='exact', precond_method='and',
                     eps=0.2, return_cascade=False,
                     debug=False):
@@ -473,6 +477,10 @@ def sll_using_pairs(g,
     num_nodes = g.num_vertices()
 
     source_likelihood = np.ones(num_nodes, dtype=np.float64)
+
+    for o in obs_nodes:
+        source_likelihood[o] = 0
+        
     obs_nodes = list(obs_nodes)
 
     counts_list = []
@@ -502,14 +510,18 @@ def sll_using_pairs(g,
         if method == 'exact':
             probas = (((dists1 - dists2) == (t1 - t2)) * mask).sum(axis=0) / counts
         elif method == 'order':
-            probas = (((dists1 <= dists2) == (t1 <= t2)) * mask).sum(axis=0) / counts
+            if t1 == t2:
+                flags = (dists1 == dists2)
+            else:
+                flags = ((dists1 < dists2) == (t1 < t2))
+            probas = (flags * mask).sum(axis=0) / counts
         else:
             diff_means = (np.sum((dists1 - dists2) * mask,
                                  axis=0)
                           / counts)
             actual_diff = t1 - t2
             penalty = (np.absolute(actual_diff - diff_means)
-                       / (np.absolute(sp_len_dict[o1] - sp_len_dict[o2]) + 1))
+                       / (np.absolute(sp_len_dict[o1] + sp_len_dict[o2])))
             penalty = penalty / np.max(penalty)  # normalize to 1
             probas = 1 - penalty  # invert
         
@@ -538,3 +550,15 @@ def sll_using_pairs(g,
             'obs_nodes': obs_nodes,
             'infection_times': infection_times
         }
+
+
+def gen_nontrivial_cascade(g, p, q, source=None):
+    while True:
+        source, c = simulate_cascade(g, p, source=source)
+        obs_nodes = observe_cascade(c, source, q, method='uniform')
+        cascade_size = np.sum(c != -1)
+        
+        if cascade_size >= 5:  # avoid small cascade
+            break
+        
+    return c, source, obs_nodes
