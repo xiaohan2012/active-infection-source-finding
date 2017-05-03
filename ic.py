@@ -520,11 +520,23 @@ def sll_using_pairs(g,
                                  axis=0)
                           / counts)
             actual_diff = t1 - t2
+            if debug:
+                print('actual_diff: {}'.format(t1 - t2))
+                print('diff means: {}'.format(diff_means[source]))
+                print('dist normalization: {}'.format(np.absolute(sp_len_dict[o1] + sp_len_dict[o2])))
             penalty = (np.absolute(actual_diff - diff_means)
                        / (np.absolute(sp_len_dict[o1] + sp_len_dict[o2])))
-            penalty = penalty / np.max(penalty)  # normalize to 1
+            try:
+                max_penalty = penalty[np.invert(np.isnan(penalty))].max()
+            except ValueError:  # zero-size array to reduction operation maximum which has no identity
+                # ignore this iteration
+                continue 
+            if debug:
+                print('max penalty {}'.format(max_penalty))
+                
+            penalty = penalty / max_penalty  # normalize to 1
             probas = 1 - penalty  # invert
-        
+
         probas[np.isnan(probas)] = 0
         
         counts_list.append(counts)
