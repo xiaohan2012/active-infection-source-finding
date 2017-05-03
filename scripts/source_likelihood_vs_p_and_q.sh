@@ -12,10 +12,8 @@ exps=(6)
 # methods=(time_diff)
 # methods=(drs pair_order time_diff_dist_sum_quad time_diff_dist_diff_quad time_diff_dist_diff_abs)
 # methods=(order-gt)
-methods=("-m exact"
-	 "-m exact -c and"
+methods=("-m exact -c and"
 	 "-m order -c and"
-	 "-m order -c or"
 	 "-m dist -c and")
 
 for method in $methods; do
