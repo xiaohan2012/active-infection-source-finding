@@ -77,9 +77,9 @@ def main(plot_type, dirnames, param, ps_as_x):
             where = np.where(np.isclose(orig_zs, z))[0][0]
             for m in ms:
                 if ps_as_x:
-                    ys = m[:, where]
-                else:
                     ys = m[where, :]
+                else:
+                    ys = m[:, where]
                 l, = ax.plot(xs,
                              ys, 'o-')
                 lines.append(l)
