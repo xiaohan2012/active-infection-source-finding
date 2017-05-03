@@ -6,14 +6,10 @@ from matplotlib import pyplot as plt
 from plot_utils import plot_source_likelihood_surface as plot_surface
 
 param = '2-6'
-graphs = ['grid', 'balanced-tree']
+graphs = ['grid', 'balanced-tree', 'barabasi', 'er']
 methods = [
-    # '1st',
-    # '1st_time',
-    'exact-None',
     'exact-and',
     'order-and',
-    'order-or',
     'dist-and'
 ]
 dirnames = list(map(lambda m: 'source-likelihood-{}'.format(m),

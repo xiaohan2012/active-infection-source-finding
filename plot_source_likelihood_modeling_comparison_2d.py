@@ -11,12 +11,10 @@ from matplotlib import pyplot as plt
 
 param = '2-6'
 
-graphs = ['balanced-tree', 'grid']
+graphs = ['balanced-tree', 'grid', 'barabasi', 'er']
 methods = [
-    'exact-None',
     'exact-and',
     'order-and',
-    'order-or',
     'dist-and'
 ]
 
