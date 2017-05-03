@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from plot_utils import plot_source_likelihood_surface as plot_surface
 
 param = '2-6'
-graphs = ['kr-hier', 'kr-peri', 'kr-rand', 'balanced-tree']
+graphs = ['grid', 'balanced-tree']
 methods = [
     # '1st',
     # '1st_time',

@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 
 param = '2-6'
 
-graphs = ['kr-hier', 'kr-peri', 'kr-rand', 'balanced-tree']
+graphs = ['balanced-tree', 'grid']
 methods = [
     'exact-None',
     'exact-and',
@@ -31,11 +31,18 @@ def main(plot_type, dirnames, param, ps_as_x):
     """
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    
-    xs = np.linspace(0.1, 1.0, 10)
-    zs = np.linspace(0.2, 1.0, 5)
-    orig_zs = np.linspace(0.1, 1.0, 10)
-    
+
+    b = np.load('outputs/{}/{}/{}.npz'.format(dirnames[0], graphs[0], param))
+
+    if ps_as_x:
+        xs = b['arr_0'][0, :]
+        zs = np.linspace(0.2, 1.0, 5)
+        orig_zs = b['arr_1'][:, 0]
+    else:
+        xs = b['arr_1'][:, 0]
+        zs = np.linspace(0.2, 1.0, 5)
+        orig_zs = b['arr_0'][0, :]
+
     per_size, nrow, ncol = 5, len(graphs), len(zs)
     fig = plt.figure(figsize=(ncol * per_size,
                               (nrow+0.3) * per_size))
@@ -105,3 +112,4 @@ if __name__ == '__main__':
              'mu_mean', 'mu_median', 'rank_mean', 'rank_median']
     Parallel(n_jobs=-1)(delayed(main)(plot_type, dirnames, param, flag)
                         for plot_type in types for flag in [True, False])
+    # main('rank_mean', dirnames, param, False)
