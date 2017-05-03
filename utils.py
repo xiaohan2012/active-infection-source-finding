@@ -89,7 +89,7 @@ def infeciton_time2weight(ts):
     times = np.array(list(ts.values()))
     times = times[(np.invert(np.isinf(times)))]
     max_val = np.max(times)
-    return {n: (max_val - t if not np.isinf(t) else 0) for n, t in ts.items()}
+    return {n: (max_val - t if t != -1 else 0) for n, t in ts.items()}
 
 
 def chunks(l, n):

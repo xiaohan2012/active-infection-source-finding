@@ -15,7 +15,8 @@ def plot_snapshot(g, pos,
                   query_node=None,
                   queried_nodes=None,
                   source_node=None,
-                  max_node_size=1000):
+                  max_node_size=1000,
+                  with_labels=False):
     weights = node2weight.values()
     vmin, vmax = min(weights), max(weights)
 
@@ -57,7 +58,7 @@ def plot_snapshot(g, pos,
                                node_color=list(map(node_color, nodes)),
                                node_size=list(map(node_size, nodes)),
                                nodelist=nodes,
-                               with_labels=False,
+                               with_labels=with_labels,
                                cmap='OrRd',
                                vmin=vmin,
                                vmax=vmax)
@@ -105,7 +106,6 @@ def plot_query_process(g, source, obs_nodes, infection_times,
                   source_node=source, queried_nodes=obs_nodes,
                   ax=ax[i, j], max_node_size=max_node_size)
     ax[i, j].set_title('using observation')
-
 
     # truncate the list to only queries by our algorithm
     mu_list = mu_list[len(obs_nodes):]
