@@ -1,6 +1,7 @@
 #! /bin/zsh
 
-gtypes=(balanced-tree kr-rand kr-peri kr-hier)
+other_params="--cache_sim"
+gtypes=(balanced-tree grid)
 # gtypes=(barabasi)
 # exps=(6 7 8 9)
 exps=(6)
@@ -21,7 +22,7 @@ for method in $methods; do
     for exp in $exps; do
 	for gtype in $gtypes; do
 	    print "$gtype $exp $method"
-	    eval "python source_likelihood_estimation_experiment.py -g $gtype -p 2-$exp $method"
+	    eval "python source_likelihood_estimation_experiment.py -g $gtype -p 2-$exp $method $other_params"
 	done
     done
 done
