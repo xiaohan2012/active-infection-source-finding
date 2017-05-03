@@ -6,9 +6,8 @@ from tqdm import tqdm
 from joblib import Parallel, delayed
 from graph_tool.all import shortest_distance
 
-from ic import simulate_cascade, observe_cascade, \
-    get_o2src_time, get_gvs, \
-    sll_using_pairs
+from ic import get_o2src_time, get_gvs, \
+    sll_using_pairs, gen_nontrivial_cascade
 from utils import get_rank_index
 
 
@@ -31,15 +30,7 @@ def source_likelihood_stat(g,
     if cache_simulation:
         simulation_cache = {}
     for i in iters:
-        while True:
-            source, infection_times = simulate_cascade(g, p)
-            obs_nodes = observe_cascade(infection_times, q, method='uniform')
-            cascade_size = np.sum(infection_times != -1)
-
-            if cascade_size >= 5:  # avoid small cascade
-                break
-        if debug:
-            print('cascade size: {}'.format(cascade_size))
+        infection_times, source, obs_nodes = gen_nontrivial_cascade(g, p, q)
 
         if cache_simulation:
             # cache the simulation result
@@ -98,13 +89,13 @@ if __name__ == '__main__':
     parser.add_argument('-e', '--eps', type=float, default=0.2)
     parser.add_argument('-d', '--debug', action='store_true')
     parser.add_argument('--n1', type=int, help="simulation rounds for parameter esimation", default=100)
-    parser.add_argument('--n2', type=int, help="experiment rounds", default=2)
+    parser.add_argument('--n2', type=int, help="experiment rounds", default=100)
 
     parser.add_argument('--p1', type=float, help="start of p", default=0.2)
     parser.add_argument('--p2', type=float, help="end of p", default=1.0)
     parser.add_argument('--ps', type=float, help="step size of p", default=0.1)
     
-    parser.add_argument('--q1', type=float, help="start of q", default=0.2)
+    parser.add_argument('--q1', type=float, help="start of q", default=0.1)
     parser.add_argument('--q2', type=float, help="end of q", default=1.0)
     parser.add_argument('--qs', type=float, help="step size of q", default=0.1)
 
@@ -166,7 +157,7 @@ if __name__ == '__main__':
     X, Y = np.meshgrid(ps, qs)
     names = ['ratio', 'dist', 'mu[s]', 'rank']
     stats = ['50%', 'mean']
-    data = [np.array([r[name][stat] for r in rows]).reshape((len(ps), len(qs)))
+    data = [np.array([r[name][stat] for r in rows]).reshape((len(ps), len(qs)))  # 9 x 10
             for name in names for stat in stats]
 
     dirname = 'outputs/source-likelihood-{}-{}/{}'.format(

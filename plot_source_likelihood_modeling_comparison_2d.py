@@ -26,7 +26,7 @@ output_dir = 'figs/source-likelihood-comparison-2d/'
 legends = methods
 
 
-def main(plot_type, dirnames, param, ps_as_x):
+def main(plot_type, dirnames, param, ps_as_y):
     """dirnames give methods
     """
     if not os.path.exists(output_dir):
@@ -34,7 +34,7 @@ def main(plot_type, dirnames, param, ps_as_x):
 
     b = np.load('outputs/{}/{}/{}.npz'.format(dirnames[0], graphs[0], param))
 
-    if ps_as_x:
+    if ps_as_y:
         xs = b['arr_0'][0, :]
         zs = np.linspace(0.2, 1.0, 5)
         orig_zs = b['arr_1'][:, 0]
@@ -76,14 +76,14 @@ def main(plot_type, dirnames, param, ps_as_x):
             ax = fig.add_subplot(nrow, ncol, idx)
             where = np.where(np.isclose(orig_zs, z))[0][0]
             for m in ms:
-                if ps_as_x:
-                    ys = m[where, :]
-                else:
+                if ps_as_y:
                     ys = m[:, where]
+                else:
+                    ys = m[where, :]
                 l, = ax.plot(xs,
                              ys, 'o-')
                 lines.append(l)
-            if ps_as_x:
+            if ps_as_y:
                 title, xlabel = 'q={:.1f}'.format(z), 'p'
             else:
                 title, xlabel = 'p={:.1f}'.format(z), 'q'
@@ -98,7 +98,7 @@ def main(plot_type, dirnames, param, ps_as_x):
                 ax.set_ylabel(gtype)
     fig.legend(lines, legends, loc='upper left')
 
-    if ps_as_x:
+    if ps_as_y:
         output_path = '{}/{}-by-q.pdf'.format(output_dir, plot_type)
     else:
         output_path = '{}/{}-by-p.pdf'.format(output_dir, plot_type)

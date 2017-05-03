@@ -163,7 +163,7 @@ def plot_source_likelihood_surface(
 
     if ax is None:
         ax = fig.gca(projection='3d')
-    surf = ax.plot_surface(X, Y, Z,
+    surf = ax.plot_surface(X, Y, np.transpose(Z),
                            rstride=1, cstride=1,
                            vmin=0, vmax=1,
                            cmap=cm.coolwarm)

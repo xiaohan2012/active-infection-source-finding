@@ -1,6 +1,6 @@
 #! /bin/zsh
 
-other_params="--cache_sim"
+other_params="--cache_sim --n2 50"
 gtypes=(balanced-tree grid)
 # gtypes=(barabasi)
 # exps=(6 7 8 9)
