@@ -5,6 +5,7 @@ import random
 import itertools
 
 from graph_tool.all import GraphView, shortest_distance
+from rewards import exact_rewards, order_rewards, dist_rewards
 
 from joblib import Parallel, delayed
 from tqdm import tqdm
@@ -458,6 +459,7 @@ def sll_using_pairs(g,
                     o2src_time,
                     source=None,
                     method='exact', precond_method='and',
+                    sp_len_dict=None,
                     eps=0.2, return_cascade=False,
                     debug=False):
     """
@@ -471,8 +473,9 @@ def sll_using_pairs(g,
     assert method in {'exact', 'order', 'order', 'dist'}
     assert precond_method in {'and', 'or', None}
     
-    if method == 'dist':
-        sp_len_dict = {o: shortest_distance(g, source=o).a for o in obs_nodes}
+    if sp_len_dict is None and method == 'dist':
+        sp_len_dict = {o: shortest_distance(g, source=o).a
+                       for o in obs_nodes}
 
     num_nodes = g.num_vertices()
 
@@ -508,35 +511,18 @@ def sll_using_pairs(g,
         counts = mask.sum(axis=0)
 
         if method == 'exact':
-            probas = (((dists1 - dists2) == (t1 - t2)) * mask).sum(axis=0) / counts
+            probas = exact_rewards(t1, t2, dists1, dists2, mask)
         elif method == 'order':
-            if t1 == t2:
-                flags = (dists1 == dists2)
-            else:
-                flags = ((dists1 < dists2) == (t1 < t2))
-            probas = (flags * mask).sum(axis=0) / counts
-        else:
-            diff_means = (np.sum((dists1 - dists2) * mask,
-                                 axis=0)
-                          / counts)
-            actual_diff = t1 - t2
-            if debug:
-                print('actual_diff: {}'.format(t1 - t2))
-                print('diff means: {}'.format(diff_means[source]))
-                print('dist normalization: {}'.format(np.absolute(sp_len_dict[o1] + sp_len_dict[o2])))
-            penalty = (np.absolute(actual_diff - diff_means)
-                       / (np.absolute(sp_len_dict[o1] + sp_len_dict[o2])))
+            probas = order_rewards(t1, t2, dists1, dists2, mask)
+        elif method == 'dist':
             try:
-                max_penalty = penalty[np.invert(np.isnan(penalty))].max()
+                probas = dist_rewards(t1, t2, dists1, dists2, sp_len_dict[o1], sp_len_dict[o2], mask)
             except ValueError:  # zero-size array to reduction operation maximum which has no identity
                 # ignore this iteration
-                continue 
-            if debug:
-                print('max penalty {}'.format(max_penalty))
-                
-            penalty = penalty / max_penalty  # normalize to 1
-            probas = 1 - penalty  # invert
-
+                continue
+        else:
+            raise ValueError('methoder is unknown')
+            
         probas[np.isnan(probas)] = 0
         
         counts_list.append(counts)
