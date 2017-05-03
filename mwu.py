@@ -22,14 +22,21 @@ def mwu(g, gvs,
         active_method=MAX_MU,
         reward_method='exact',
         eps=0.2,
-        max_iter=100,
+        max_iter=float('inf'),
         use_uninfected=True,
-        debug=False):
+        debug=False,
+        save_log=False):
+    if save_log:
+        query_log = []
+        sll_log = []
+        is_nbr_log = []
     if o2src_time is None:
         o2src_time = get_o2src_time(obs_nodes, gvs, debug=debug)
 
     if reward_method == 'dist':
         sp_len_dict = {o: shortest_distance(g, source=o).a for o in obs_nodes}
+    else:
+        sp_len_dict = None
     # init
     sll = sll_using_pairs(
         g,
@@ -75,11 +82,14 @@ def mwu(g, gvs,
                 print('query {}'.format(q))
             queried_nodes.add(q)
             unqueried_nodes.remove(q)
+            if save_log:
+                query_log.append(q)
+                is_nbr_log.append(False)
         else:
             if debug:
                 print('using node from nodes_to_use')
             q = nodes_to_use.pop()
-
+        q = int(q)
         if infection_times[q] == -1 and use_uninfected:
             # the query is uninfected
             pass
@@ -115,7 +125,11 @@ def mwu(g, gvs,
 
                 probas[np.isnan(probas)] = 0
                 sll *= (eps + (1-eps) * probas)
-                sll /= sll.sum()
+                if np.isclose(sll.sum(), 0):
+                    print('warning: sll.sum() close to 0')
+                    sll = np.ones(g.num_vertices()) / g.num_vertices()
+                else:
+                    sll /= sll.sum()
 
             # when q is used for updating sll, add it to reference list
             ref_nodes.add(q)
@@ -127,6 +141,9 @@ def mwu(g, gvs,
             if infection_times[q] >= min_inf_t:
                 sll[q] = 0
 
+        if save_log:
+            sll_log.append(sll)
+
         if debug:
             print('add q to ref_nodes (#nodes={})'.format(len(ref_nodes)))
             print('source current rank = {}'.format(get_rank_index(sll, source)))
@@ -135,16 +152,21 @@ def mwu(g, gvs,
         # query its neighbors
         winners = np.nonzero(sll == sll.max())[0]
         for w in winners:
-            nbrs = set(g.vertex(w).all_neighbours())
+            nbrs = set(map(int, g.vertex(w).all_neighbours()))
             unqueried_neighbors = nbrs - queried_nodes
             nodes_to_use += list(unqueried_neighbors)
             queried_nodes |= unqueried_neighbors
+
+            if save_log:
+                query_log += list(unqueried_neighbors)
+                is_nbr_log += [True] * len(unqueried_neighbors)
 
             if infection_times[w] != -1:
                 is_source = np.all([(infection_times[w] < infection_times[int(u)])
                                     for u in nbrs])
             else:
                 is_source = False
+                continue
 
             if debug:
                 print('checking source {} with winner {}'.format(source, w))
@@ -156,10 +178,18 @@ def mwu(g, gvs,
                 if debug:
                     print('**Found source and used {} queries'.format(query_count))
                 assert source == w
-                return query_count
+                if save_log:
+                    return query_count, query_log, sll_log, is_nbr_log
+                else:
+                    return query_count
             else:
                 sll[w] = 0
-    return -1
+
+    query_count = len(queried_nodes)
+    if save_log:
+        return query_count, query_log, sll_log, is_nbr_log
+    else:
+        return query_count
 
 
 # @profile

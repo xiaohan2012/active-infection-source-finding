@@ -5,65 +5,40 @@ import networkx as nx
 from tqdm import tqdm
 
 
-from ic import make_partial_cascade, sample_graph_from_infection
-from mwu import main_routine as mwu
+from ic import gen_nontrivial_cascade, get_gvs
+from mwu import mwu
 from edge_mwu import mwu_by_infection_direction
 from noisy_binary_search import noisy_binary_search
 from baselines import random_dog
 from joblib import Parallel, delayed
 
 
-def experiment_node_mwu_multiple_rounds(rounds,
-                                        g,
-                                        node2id, id2node,
-                                        s2n_probas,
-                                        fraction, epsilon, sampling_method,
-                                        query_selection_method,
-                                        check_neighbor_threshold,
-                                        max_iter=float('inf'),
-                                        seed=None):
+def experiment_mwu_n_rounds(rounds,
+                            g,
+                            p, q, epsilon,
+                            sampling_method,
+                            active_method,
+                            reward_method,
+                            n1=100,
+                            seed=None):
     np.random.seed(seed)
     random.seed(seed)
     results = []
+    gvs = get_gvs(g, p, n1)
     for i in tqdm(range(rounds)):
-        source, obs_nodes, infection_times, tree = make_partial_cascade(
-            g, fraction, sampling_method=sampling_method)
-        r = mwu(g, node2id, id2node,
-                source, obs_nodes, infection_times,
-                s2n_probas,
-                epsilon,
-                query_selection_method=query_selection_method,
-                debug=False,
-                max_iter=max_iter,
-                save_log=False)
-        results.append(r)
+        infection_times, source, obs_nodes = gen_nontrivial_cascade(
+            g, p, q)
+        r = mwu(g, gvs,
+                source, obs_nodes, infection_times, o2src_time=None,
+                active_method=active_method,
+                reward_method=reward_method,
+                eps=0.2,
+                max_iter=g.num_vertices(),
+                use_uninfected=True,
+                debug=False)
+        if r > 0:
+            results.append(r)
     return results
-
-
-def experiment_edge_mwu_multiple_rounds(g,
-                                        query_method,
-                                        dir_tbl, inf_tbl,
-                                        sp_len,
-                                        check_neighbor_threshold=0.01,
-                                        fraction=0.05,
-                                        sampling_method='late_nodes',
-                                        rounds=100,
-                                        max_iter=float('inf')):
-    counts = []
-    for i in tqdm(range(rounds)):
-        source, obs_nodes, infection_times, tree = make_partial_cascade(
-            g, fraction, sampling_method=sampling_method)
-        query_count = mwu_by_infection_direction(
-            g, query_method,
-            obs_nodes, infection_times, source,
-            direction_reward_table=dir_tbl,
-            inf_reward_table=inf_tbl,
-            sp_len=sp_len,
-            check_neighbor_threshold=check_neighbor_threshold,
-            max_iter=max_iter,
-            save_logs=False)
-        counts.append(query_count)
-    return counts
 
 
 def experiment_multiple_rounds(source_finding_method, rounds, g, fraction, sampling_method):
@@ -82,8 +57,8 @@ def experiment_multiple_rounds(source_finding_method, rounds, g, fraction, sampl
     return cnts
 
 
-def experiment_dog_multiple_rounds(rounds, g, fraction, sampling_method,
-                                   query_fraction):
+def experiment_dog_n_rounds(rounds, g, fraction, sampling_method,
+                            query_fraction):
     cnts = []
     for i in range(rounds):
         source, obs_nodes, infection_times, tree = make_partial_cascade(
@@ -95,7 +70,7 @@ def experiment_dog_multiple_rounds(rounds, g, fraction, sampling_method,
 
 def counts_to_stat(counts):
     s = pd.Series(list(filter(lambda c: c is not False, counts)))
-    return s.describe().to_dict()
+    return s.describe()
 
 
 def noisy_bs_one_round(g, sp_len,

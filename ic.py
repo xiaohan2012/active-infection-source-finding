@@ -469,7 +469,8 @@ def sll_using_pairs(g,
     each matrix has size K by V
     each row corresponds to one simulation and is the distance from observed node to all nodes
     there are K simultions, so K rows
-    """    
+    """
+    assert len(obs_nodes) >= 2, "at least 2 observation are required"
     assert method in {'exact', 'order', 'order', 'dist'}
     assert precond_method in {'and', 'or', None}
     

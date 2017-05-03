@@ -17,16 +17,22 @@ def run_mwu(method, tree_and_cascade):
         reward_method='dist',
         eps=0.2,
         max_iter=g.num_vertices(),
-        debug=True)
+        debug=True,
+        save_log=True)
     return query_count
 
 
 def test_mwc_max_mu(tree_and_cascade):
-    query_count = run_mwu(
+    query_count, q_log, sll_log, is_nbr_log = run_mwu(
         MAX_MU, tree_and_cascade)
     assert query_count == 4
+    assert len(q_log) == query_count
+    assert len(q_log) == len(is_nbr_log)
+
 
 def test_mwc_random(tree_and_cascade):
-    query_count = run_mwu(
+    query_count, q_log, sll_log, is_nbr_log = run_mwu(
         RANDOM, tree_and_cascade)
     assert query_count == 4
+    assert len(q_log) == query_count
+    assert len(q_log) == len(is_nbr_log)
