@@ -3,16 +3,128 @@ import networkx as nx
 import numpy as np
 from copy import copy
 from scipy.sparse import isspmatrix_csr
+from graph_tool.all import shortest_distance
 from tqdm import tqdm
-from core import normalize_mu, print_nodes_by_mu, penalty_using_distribution
-from query_strategy import centroid, maximal_adversarial_query
 
+
+from core import normalize_mu, print_nodes_by_mu, penalty_using_distribution
+from rewards import exact_rewards, order_rewards, dist_rewards
+from ic import get_o2src_time, sll_using_pairs, get_infection_time
+from utils import get_rank_index
 
 RANDOM = 'random'
 MAX_MU = 'max_mu'
 RAND_MAX_MU = 'rand_max_mu'
-MAX_ADV = 'max_adversarial'
-CENTROID = 'by_centroid'
+
+
+def mwu(g, gvs,
+        source, obs_nodes, infection_times, o2src_time=None,
+        active_method=MAX_MU,
+        reward_method='exact',
+        eps=0.2,
+        max_iter=100,
+        debug=False):
+    if o2src_time is None:
+        o2src_time = get_o2src_time(obs_nodes, gvs, debug=debug)
+
+    if reward_method == 'dist':
+        sp_len_dict = {o: shortest_distance(g, source=o).a for o in obs_nodes}
+    # init
+    sll = sll_using_pairs(
+        g,
+        obs_nodes,
+        infection_times,
+        o2src_time,
+        sp_len_dict=sp_len_dict,
+        source=source,
+        method=reward_method,
+        eps=eps,
+        precond_method='and',
+        return_cascade=False,
+        debug=debug)
+        
+    iter_i = 0
+    all_nodes = set(np.arange(g.num_vertices()))
+    unqueried_nodes = all_nodes - set(obs_nodes)
+    queried_nodes = set()
+    ref_nodes = set(obs_nodes)  # reference nodes to use for MWU
+    nodes_to_use = []  # nodes coming from querying the neighbors
+
+    while iter_i < max_iter:
+        iter_i += 1
+        if len(unqueried_nodes) == 0:
+            print('no more nodes to query')
+            break
+        if len(nodes_to_use) == 0:
+            if active_method == MAX_MU:
+                q = max(unqueried_nodes, key=lambda n: sll[n])
+            elif active_method == RANDOM:
+                q = random.choice(unqueried_nodes)
+            else:
+                raise ValueError('available query methods are {}'.format(MAX_MU))
+
+            if debug:
+                print('query {}'.format(q))
+            queried_nodes.add(q)
+            unqueried_nodes.remove(q)
+        else:
+            if debug:
+                print('using node from nodes_to_use')
+            q = nodes_to_use.pop()
+
+        if reward_method == 'dist':
+            sp_len_dict[q] = shortest_distance(g, source=q).a
+
+        o2src_time[q] = np.array([get_infection_time(gv, q) for gv in gvs])
+
+        for o in ref_nodes:
+            tq, to = infection_times[q], infection_times[o]
+            dists_q, dists_o = o2src_time[q], o2src_time[o]
+            mask = np.logical_and(dists_q != -1, dists_o != -1)
+
+            if reward_method == 'exact':
+                probas = exact_rewards(tq, to, dists_q, dists_o, mask)
+            elif reward_method == 'order':
+                probas = order_rewards(tq, to, dists_q, dists_o, mask)
+            elif reward_method == 'dist':
+                try:
+                    probas = dist_rewards(tq, to, dists_q, dists_o, sp_len_dict[q], sp_len_dict[o], mask)
+                except ValueError:
+                    # zero-size array to reduction operation maximum which has no identity
+                    # ignore this iteration
+                    continue
+            else:
+                raise ValueError('methoder is unknown')
+
+            probas[np.isnan(probas)] = 0
+            sll *= (eps + (1-eps) * probas)
+            sll /= sll.sum()
+
+        ref_nodes.add(q)
+        if debug:
+            print('add q to ref_nodes (#nodes={})'.format(len(ref_nodes)))
+            print('source current rank = {}'.format(get_rank_index(sll, source)))
+        
+        # if some node has very large mu
+        # query its neighbors
+        winners = np.nonzero(sll == sll.max())[0]
+        for w in winners:
+            nbrs = g.vertex(w).all_neighbours()
+            unqueried_neighbors = set(nbrs) - queried_nodes
+            nodes_to_use += list(unqueried_neighbors)
+
+            is_source = np.all([(infection_times[w] < infection_times[u])
+                                for u in nbrs])
+            if is_source:
+                query_count = len(queried_nodes - set(obs_nodes))
+                if debug:
+                    print('**Found source and used {} queries'.format(query_count))
+                assert source == w
+                return query_count
+            else:
+                sll[w] = 0
+    return -1
+
 
 # @profile
 def main_routine(g, node2id, id2node,
