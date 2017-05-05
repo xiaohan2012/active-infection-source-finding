@@ -31,7 +31,9 @@ def dist_rewards(t1, t2, dists1, dists2, len1, len2, mask, debug=False, source=N
     max_penalty = penalty[np.invert(np.isnan(penalty))].max()
     if debug:
         print('max penalty {}'.format(max_penalty))
-        
+    if max_penalty <= 0:
+        raise ValueError('max_penalty is zero')
+    assert not np.isnan(max_penalty)
     penalty = penalty / max_penalty  # normalize to 1
     probas = 1 - penalty  # invert
     return probas

@@ -317,7 +317,7 @@ def source_likelihood_drs(n_nodes, obs_nodes, inf_time_3d,
         if debug:
             print('t1={}, t2={}'.format(t1, t2))
             print('source reward: {:.2f}'.format(probas[source]))
-            print('obs reward: {}'.format([probas[obs] for obs in set(obs_nodes)-{source}]))
+            # print('obs reward: {}'.format([probas[obs] for obs in set(obs_nodes)-{source}]))
 
         if use_time_weight:
             weight = weight_func(min(t1, t2))
@@ -380,7 +380,7 @@ def source_likelihood_quad_time_difference(
             print('t1={}, t2={}'.format(t1, t2))
             print('diff_means', diff_means)
             print('source reward: {:.2f}'.format(probas[source]))
-            print('obs reward: {}'.format([probas[obs] for obs in set(obs_nodes)-{source}]))
+            # print('obs reward: {}'.format([probas[obs] for obs in set(obs_nodes)-{source}]))
             
         # **questionabl**, what if no non-inf pair is found , does it mean we penalize all?
         probas[np.isnan(probas)] = nan_proba
@@ -533,7 +533,7 @@ def sll_using_pairs(g,
         if debug:
             print('t1={}, t2={}'.format(t1, t2))
             print('source reward: {:.2f}'.format(probas[source]))
-            print('obs reward: {}'.format([probas[obs] for obs in set(obs_nodes)-{source}]))
+            # print('obs reward: {}'.format([probas[obs] for obs in set(obs_nodes)-{source}]))
 
         source_likelihood *= (eps + (1-eps) * probas)
         source_likelihood /= source_likelihood.sum()

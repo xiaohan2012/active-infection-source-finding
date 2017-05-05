@@ -110,6 +110,8 @@ def mwu(g, gvs,
             else:
                 sll /= sll.sum()
         else:
+            if debug:
+                print('using pairs to update sll')
             # the query is infected
             if reward_method == 'dist':
                 sp_len_dict[q] = shortest_distance(g, source=q).a
@@ -117,6 +119,7 @@ def mwu(g, gvs,
             o2src_time[q] = np.array([get_infection_time(gv, q) for gv in gvs])
 
             for o in ref_nodes:
+                probas = None
                 tq, to = infection_times[q], infection_times[o]
                 dists_q, dists_o = o2src_time[q], o2src_time[o]
                 mask = np.logical_and(dists_q != -1, dists_o != -1)
@@ -134,12 +137,19 @@ def mwu(g, gvs,
                             mask)
                     except ValueError:
                         # zero-size array to reduction operation maximum which has no identity
+                        # or max_penalty = 0
                         # ignore this iteration
                         continue
                 else:
                     raise ValueError('methoder is unknown')
 
                 probas[np.isnan(probas)] = 0
+
+                if debug and probas is not None:
+                    print('source reward (without smoothing): {:.2f}'.format(probas[source]))
+                    print('max reward: {}'.format(np.max(probas)))
+                    print('probas {}'.format(probas[:10]))
+
                 sll *= (eps + (1-eps) * probas)
                 if np.isclose(sll.sum(), 0):
                     print('warning: sll.sum() close to 0')
@@ -147,8 +157,12 @@ def mwu(g, gvs,
                 else:
                     sll /= sll.sum()
 
-            # when q is used for updating sll, add it to reference list
-            ref_nodes.add(q)
+                if debug:
+                    print('new sll[source] = {}'.format(sll[source]))
+
+            if debug:
+                if np.isclose(sll[source], 0):
+                    print('warning: source sll is 0!!')
 
             # if the query node infection time is no smaller than
             # the current known earliest infection,
@@ -158,12 +172,16 @@ def mwu(g, gvs,
                 infection_times[q] >= min_inf_t):
                 sll[q] = 0
 
+            # when q is used for updating sll, add it to reference list
+            ref_nodes.add(q)
+            if debug:
+                print('add q to ref_nodes (#nodes={})'.format(len(ref_nodes)))
+
         if save_log:
             sll_log.append(sll)
 
         if debug:
-            print('add q to ref_nodes (#nodes={})'.format(len(ref_nodes)))
-            print('source current rank = {}'.format(get_rank_index(sll, source)))
+            print('source current rank = {}, {:.2f}'.format(get_rank_index(sll, source), sll[source]))
         
         # if some node has very large mu
         # query its neighbors
