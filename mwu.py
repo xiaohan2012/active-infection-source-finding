@@ -17,6 +17,14 @@ MAX_MU = 'max_mu'
 RAND_MAX_MU = 'rand_max_mu'
 
 
+def get_reward_for_uninfected_query(q, gvs):
+    infection_times = np.array([get_infection_time(gv, q) for gv in gvs])
+    infection_times[infection_times > 0] = 0
+    infection_times[infection_times < 0] = 1
+    
+    return infection_times.sum(axis=0) / infection_times.shape[0]
+
+
 def mwu(g, gvs,
         source, obs_nodes, infection_times, o2src_time=None,
         active_method=MAX_MU,
@@ -92,7 +100,15 @@ def mwu(g, gvs,
         q = int(q)
         if infection_times[q] == -1 and use_uninfected:
             # the query is uninfected
-            pass
+            if debug:
+                print('{} is uninfected'.format(q))
+            probas = get_reward_for_uninfected_query(q, gvs)
+            sll *= (eps + (1-eps) * probas)
+            if np.isclose(sll.sum(), 0):
+                print('warning: sll.sum() close to 0')
+                sll = np.ones(g.num_vertices()) / g.num_vertices()
+            else:
+                sll /= sll.sum()
         else:
             # the query is infected
             if reward_method == 'dist':
@@ -138,7 +154,8 @@ def mwu(g, gvs,
             # the current known earliest infection,
             # it cannot be the source
             min_inf_t = min(infection_times[n] for n in ref_nodes)
-            if infection_times[q] >= min_inf_t:
+            if (infection_times[q] == -1 or
+                infection_times[q] >= min_inf_t):
                 sll[q] = 0
 
         if save_log:
