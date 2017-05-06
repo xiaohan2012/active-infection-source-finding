@@ -86,10 +86,10 @@ def test_generalized_jaccard_similarity():
 
 def infeciton_time2weight(ts):
     """invert the infection times so that earlier infected nodes have larger weight"""
-    times = np.array(list(ts.values()))
-    times = times[(np.invert(np.isinf(times)))]
-    max_val = np.max(times)
-    return {n: (max_val - t if t != -1 else 0) for n, t in ts.items()}
+    max_val = np.max(ts)
+    return np.array(
+        [(max_val - t)
+         for n, t in enumerate(ts)])
 
 
 def chunks(l, n):

@@ -11,13 +11,17 @@ from utils import infeciton_time2weight
 
 def plot_snapshot(g, pos,
                   node2weight,
+                  is_infection_time=True,
                   ax=None,
                   query_node=None,
                   queried_nodes=None,
                   source_node=None,
                   max_node_size=1000,
                   with_labels=False):
-    weights = node2weight.values()
+    if is_infection_time:
+        node2weight = infeciton_time2weight(node2weight)
+
+    weights = node2weight
     vmin, vmax = min(weights), max(weights)
 
     def node_color(n):
@@ -28,7 +32,7 @@ def plot_snapshot(g, pos,
             return '^'
         elif n == source_node:
             return '*'        
-        elif queried_nodes and n in queried_nodes:
+        elif len(queried_nodes) > 0 and n in queried_nodes:
             return 's'
         else:
             return 'o'
@@ -39,7 +43,7 @@ def plot_snapshot(g, pos,
             return max_node_size / 2
         elif n == query_node:
             return max_node_size
-        elif queried_nodes and n in queried_nodes:
+        elif len(queried_nodes) > 0 and n in queried_nodes:
             return max_node_size / 4
         elif node2weight[n] != 0:
             return max_node_size / 4
