@@ -148,7 +148,7 @@ def mwu(g, gvs,
                 if debug and probas is not None:
                     print('source reward (without smoothing): {:.2f}'.format(probas[source]))
                     print('max reward: {}'.format(np.max(probas)))
-                    print('probas {}'.format(probas[:10]))
+                    # print('probas {}'.format(probas[:10]))
 
                 sll *= (eps + (1-eps) * probas)
                 if np.isclose(sll.sum(), 0):
@@ -164,12 +164,12 @@ def mwu(g, gvs,
                 if np.isclose(sll[source], 0):
                     print('warning: source sll is 0!!')
 
-            # if the query node infection time is no smaller than
+            # if the query node infection time is larger than
             # the current known earliest infection,
             # it cannot be the source
             min_inf_t = min(infection_times[n] for n in ref_nodes)
             if (infection_times[q] == -1 or
-                infection_times[q] >= min_inf_t):
+                infection_times[q] > min_inf_t):
                 sll[q] = 0
 
             # when q is used for updating sll, add it to reference list
@@ -198,7 +198,8 @@ def mwu(g, gvs,
 
             if infection_times[w] != -1:
                 is_source = np.all([(infection_times[w] < infection_times[int(u)])
-                                    for u in nbrs])
+                                    for u in nbrs
+                                    if infection_times[int(u)] != -1])
             else:
                 is_source = False
                 continue
