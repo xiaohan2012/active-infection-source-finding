@@ -126,13 +126,13 @@ def test_best_tree_sizes_tree(tree_and_cascade):
     scores = best_tree_sizes(g, obs_nodes, infection_times)
     print('|possible_nodes|={}'.format(np.sum(np.invert(np.isinf(scores)))))
     print(scores[source], scores.min())
-    assert get_rank_index(-scores, source) <= 3
+    assert get_rank_index(scores, source) <= 3
 
 
 def test_best_tree_sizes_grid(grid_and_cascade):
     g, _, infection_times, source, obs_nodes = grid_and_cascade
     scores = best_tree_sizes(g, obs_nodes, infection_times)
-    assert get_rank_index(-scores, source) <= 1
+    assert get_rank_index(scores, source) <= 1
 
 
 def test_full_observation_tree(tree_and_cascade):
@@ -140,7 +140,7 @@ def test_full_observation_tree(tree_and_cascade):
     for p in np.arange(0.2, 1.0, 0.1):
         infection_times, source, obs_nodes = gen_nontrivial_cascade(g, p, 1.0)
         scores = best_tree_sizes(g, obs_nodes, infection_times)
-        assert get_rank_index(-scores, source) == 0
+        assert get_rank_index(scores, source) == 0
 
 
 def test_full_observation_grid(grid_and_cascade):
@@ -148,4 +148,4 @@ def test_full_observation_grid(grid_and_cascade):
     for p in np.arange(0.5, 1.0, 0.1):
         infection_times, source, obs_nodes = gen_nontrivial_cascade(g, p, 1.0)
         scores = best_tree_sizes(g, obs_nodes, infection_times)
-        assert get_rank_index(-scores, source) == 0
+        assert get_rank_index(scores, source) == 0
