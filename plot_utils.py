@@ -153,24 +153,23 @@ def plot_source_likelihood_surface(
         angle=(15, 210), use_colorbar=True):
     bunch = np.load('outputs/{}/{}/{}.npz'.format(dirname, gtype, param))
     X, Y = bunch['arr_0'], bunch['arr_1']
-    if plot_type == 'ratio_median':
-        Z = bunch['arr_2']
-    elif plot_type == 'ratio_mean':
-        Z = bunch['arr_3']
-    elif plot_type == 'dist_median':
-        Z = bunch['arr_4']
+
+    if plot_type == 'dist_median':
+        key = 'arr_2'
     elif plot_type == 'dist_mean':
-        Z = bunch['arr_5']
+        key = 'arr_3'
     elif plot_type == 'mu_median':
-        Z = bunch['arr_6']
+        key = 'arr_4'
     elif plot_type == 'mu_mean':
-        Z = bunch['arr_7']
+        key = 'arr_5'
     elif plot_type == 'rank_median':
-        Z = bunch['arr_8']
+        key = 'arr_6'
     elif plot_type == 'rank_mean':
-        Z = bunch['arr_9']
+        key = 'arr_7'
     else:
         raise ValueError('invalid plot_type')
+
+    Z = bunch[key]
 
     if ax is None:
         ax = fig.gca(projection='3d')

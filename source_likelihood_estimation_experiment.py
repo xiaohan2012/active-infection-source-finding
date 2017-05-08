@@ -9,6 +9,7 @@ from graph_tool.all import shortest_distance
 from ic import get_o2src_time, get_gvs, \
     sll_using_pairs, gen_nontrivial_cascade
 from utils import get_rank_index
+from steiner_tree import best_tree_sizes
 
 
 def source_likelihood_stat(g,
@@ -31,31 +32,34 @@ def source_likelihood_stat(g,
         simulation_cache = {}
     for i in iters:
         infection_times, source, obs_nodes = gen_nontrivial_cascade(g, p, q)
-
-        if cache_simulation:
-            # cache the simulation result
-            o2src_time = get_o2src_time(set(obs_nodes) - set(simulation_cache.keys()),
-                                        gvs,
-                                        debug=debug)
-            simulation_cache.update(o2src_time)
-        else:
-            o2src_time = get_o2src_time(obs_nodes,
-                                        gvs,
-                                        debug=debug)
-            simulation_cache = o2src_time
-
-        source_estimation_params_gt = {
-            'g': g,
-            'obs_nodes': obs_nodes,
-            'o2src_time': simulation_cache,
-            'infection_times': infection_times,
-            'method': estimation_method,
-            'precond_method': precond_method,
-            'eps': eps
-        }
-
         sources.append(source)
-        sll = sll_using_pairs(**source_estimation_params_gt)
+        if estimation_method == 'steiner':
+            if debug:
+                print('using steiner tree')
+            sll = best_tree_sizes(g, obs_nodes, infection_times)
+        else:
+            if cache_simulation:
+                # cache the simulation result
+                o2src_time = get_o2src_time(set(obs_nodes) - set(simulation_cache.keys()),
+                                            gvs,
+                                            debug=debug)
+                simulation_cache.update(o2src_time)
+            else:
+                o2src_time = get_o2src_time(obs_nodes,
+                                            gvs,
+                                            debug=debug)
+                simulation_cache = o2src_time
+
+            source_estimation_params_gt = {
+                'g': g,
+                'obs_nodes': obs_nodes,
+                'o2src_time': simulation_cache,
+                'infection_times': infection_times,
+                'method': estimation_method,
+                'precond_method': precond_method,
+                'eps': eps
+            }
+            sll = sll_using_pairs(**source_estimation_params_gt)
 
         winner = np.argmax(sll)
         dist_to_max_n = shortest_distance(g, source=source, target=winner)
@@ -65,12 +69,10 @@ def source_likelihood_stat(g,
     source_likelihood_array = np.array(sll_array, dtype=np.float64)
     source_llh = np.array([source_likelihood_array[i, src]
                            for i, src in enumerate(sources)])
-    ratios = source_llh / source_likelihood_array.max(axis=1)
     ranks = np.array([get_rank_index(source_likelihood_array[i, :], src)
                       for i, src in enumerate(sources)])
 
     return {
-        'ratio': pd.Series(ratios[np.invert(np.isnan(ratios))]).describe(),
         'dist': pd.Series(dist_array).describe(),
         'mu[s]': pd.Series(source_llh).describe(),
         'rank': pd.Series(ranks).describe(),
@@ -155,7 +157,7 @@ if __name__ == '__main__':
             for p in tqdm(ps) for q in qs]
 
     X, Y = np.meshgrid(ps, qs)
-    names = ['ratio', 'dist', 'mu[s]', 'rank']
+    names = ['dist', 'mu[s]', 'rank']
     stats = ['50%', 'mean']
     data = [np.array([r[name][stat] for r in rows]).reshape((len(ps), len(qs)))  # 9 x 10
             for name in names for stat in stats]

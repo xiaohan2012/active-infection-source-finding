@@ -4,11 +4,15 @@ mpl.use('pdf')
 import os
 from matplotlib import pyplot as plt
 from plot_utils import plot_source_likelihood_surface as plot_surface
+from mpl_toolkits.mplot3d import Axes3D
 
 param = '2-6'
-graphs = ['grid', 'balanced-tree', 'barabasi', 'er']
+graphs = ['balanced-tree', 'grid']
+          # , 'barabasi', 'er'
+
 methods = [
-    'exact-and',
+    'steiner-None',
+    # 'exact-and',
     'order-and',
     'dist-and'
 ]
@@ -56,6 +60,7 @@ def main(plot_type):
     fig.savefig(figpath)
 
 if __name__ == '__main__':
-    for t in ['ratio_mean', 'ratio_median', 'dist_mean', 'dist_median',
-              'mu_mean', 'mu_median', 'rank_mean', 'rank_median']:
+    for t in ['dist_mean', 'dist_median',
+              'mu_mean', 'mu_median',
+              'rank_mean', 'rank_median']:
         main(t)

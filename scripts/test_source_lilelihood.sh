@@ -1,8 +1,8 @@
 #! /bin/zsh
 
 python source_likelihood_estimation_experiment.py \
-       -g kr-hier -p '2-6' \
-       -m exact -c and  \
+       -g balanced-tree -p '2-6' \
+       -m steiner  \
        --n1 10 --n2 10 \
        --p1 0.5 --p2 0.5 \
        --q1 1.0 --q2 1.0 \

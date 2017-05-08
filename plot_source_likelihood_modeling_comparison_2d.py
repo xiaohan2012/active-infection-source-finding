@@ -11,9 +11,10 @@ from matplotlib import pyplot as plt
 
 param = '2-6'
 
-graphs = ['balanced-tree', 'grid', 'barabasi', 'er']
+graphs = ['balanced-tree', 'grid'] # , 'barabasi', 'er'
 methods = [
-    'exact-and',
+    'steiner-None',
+    # 'exact-and',    
     'order-and',
     'dist-and'
 ]
@@ -48,22 +49,18 @@ def main(plot_type, dirnames, param, ps_as_y):
     for i, gtype in enumerate(graphs):
         bunches = [np.load('outputs/{}/{}/{}.npz'.format(dirname, gtype, param))
                    for dirname in dirnames]
-        if plot_type == 'ratio_median':
+        if plot_type == 'dist_median':
             key = 'arr_2'
-        elif plot_type == 'ratio_mean':
-            key = 'arr_3'
-        elif plot_type == 'dist_median':
-            key = 'arr_4'
         elif plot_type == 'dist_mean':
-            key = 'arr_5'
+            key = 'arr_3'
         elif plot_type == 'mu_median':
-            key = 'arr_6'
+            key = 'arr_4'
         elif plot_type == 'mu_mean':
-            key = 'arr_7'
+            key = 'arr_5'
         elif plot_type == 'rank_median':
-            key = 'arr_8'
+            key = 'arr_6'
         elif plot_type == 'rank_mean':
-            key = 'arr_9'
+            key = 'arr_7'
         else:
             raise ValueError('invalid plot_type')
         ms = [b[key] for b in bunches]
@@ -106,8 +103,9 @@ def main(plot_type, dirnames, param, ps_as_y):
 
 if __name__ == '__main__':
     from joblib import Parallel, delayed
-    types = ['ratio_mean', 'ratio_median', 'dist_mean', 'dist_median',
-             'mu_mean', 'mu_median', 'rank_mean', 'rank_median']
+    types = ['dist_mean', 'dist_median',
+             'mu_mean', 'mu_median',
+             'rank_mean', 'rank_median']
     Parallel(n_jobs=-1)(delayed(main)(plot_type, dirnames, param, flag)
                         for plot_type in types for flag in [True, False])
     # main('rank_mean', dirnames, param, False)
