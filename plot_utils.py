@@ -4,7 +4,6 @@ import matplotlib as mpl
 import networkx as nx
 from matplotlib import pyplot as plt, cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
-from mpl_toolkits.mplot3d import axes3d
 from cycler import cycler
 from utils import infeciton_time2weight
 
@@ -17,7 +16,8 @@ def plot_snapshot(g, pos,
                   queried_nodes=None,
                   source_node=None,
                   max_node_size=1000,
-                  with_labels=False):
+                  with_labels=False,
+                  edges=None):
     if is_infection_time:
         node2weight = infeciton_time2weight(node2weight)
 
@@ -62,11 +62,18 @@ def plot_snapshot(g, pos,
                                node_color=list(map(node_color, nodes)),
                                node_size=list(map(node_size, nodes)),
                                nodelist=nodes,
-                               with_labels=with_labels,
                                cmap='OrRd',
                                vmin=vmin,
                                vmax=vmax)
-    nx.draw_networkx_edges(g, pos=pos, ax=ax)
+    if with_labels:
+        nx.draw_networkx_labels(g, pos,
+                                labels={n: str(n) for n in g.nodes()},
+                                font_size=10,
+                                ax=ax)
+    if edges:
+        nx.draw_networkx_edges(g, pos=pos, ax=ax, edgelist=edges)
+    else:
+        nx.draw_networkx_edges(g, pos=pos, ax=ax)
 
 
 def add_colorbar(cvalues, cmap='OrRd', ax=None):
