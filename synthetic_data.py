@@ -127,7 +127,7 @@ def main():
     elif gtype == BARABASI:
         g = extract_larges_CC(nx.barabasi_albert_graph(size, 5))
     elif gtype == GRID:
-        g = grid_2d(size)
+        g = grid_2d(int(np.sqrt(size)))
     elif gtype == CLIQUE:
         g = nx.complete_graph(size)
     elif gtype == LINE:
@@ -139,7 +139,7 @@ def main():
     print('|V|={}, |E|={}'.format(g.number_of_nodes(), g.number_of_edges()))
 
     if gtype == GRID:
-        mapping = {(i, j): args.size * i + j for i, j in g.nodes_iter()}
+        mapping = {(i, j): int(np.sqrt(size)) * i + j for i, j in g.nodes_iter()}
         g = nx.relabel_nodes(g, mapping)
     else:
         g = nx.convert_node_labels_to_integers(g)
@@ -149,8 +149,9 @@ def main():
 
     print('graph type: {}'.format(gtype))
     # g = add_p_and_delta(g, p, delta)
-    
-    nx.write_graphml(g, '{}/graph.graphml'.format(output_dir, gtype))
+    output_path = '{}/graph.graphml'.format(output_dir, gtype)
+    print('saving to {}'.format(output_path))
+    nx.write_graphml(g, output_path)
     nx.write_gpickle(g, '{}/graph.gpkl'.format(output_dir, gtype))
 
     if False:
