@@ -181,7 +181,7 @@ def mwu(g, gvs,
             sll_log.append(sll)
 
         if debug:
-            print('source current rank = {}, {:.2f}'.format(get_rank_index(sll, source), sll[source]))
+            print('source current rank = {}, {:.5f}'.format(get_rank_index(sll, source), sll[source]))
         
         # if some node has very large mu
         # query its neighbors
