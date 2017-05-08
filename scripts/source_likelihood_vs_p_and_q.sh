@@ -1,14 +1,13 @@
 #! /bin/zsh
 
 other_params="--cache_sim --n2 128"
-gtypes=(balanced-tree grid)
-	# barabasi er
+gtypes=(balanced-tree grid barabasi er)
+
 exps=(6)
 
-# methods=("-m exact -c and"
-# 	 "-m order -c and"
-# 	 "-m dist -c and")
-methods=("-m steiner")
+methods=("-m steiner"
+    "-m order -c and"
+    "-m dist -c and")
 
 for method in $methods; do
     for exp in $exps; do
