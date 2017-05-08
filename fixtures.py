@@ -44,7 +44,7 @@ def grid_and_cascade():
     return g, get_gvs(g, 0.5, 100), c, s, o
 
 
-def setup_module(module):
+def setup_function(module):
     import random
     import numpy as np
     seed = 123456

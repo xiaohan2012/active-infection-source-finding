@@ -109,4 +109,6 @@ def sp_len_2d(g, dtype=np.float64):
 
 
 def get_rank_index(array, id_):
-    return np.where(np.argsort(array)[::-1] == id_)[0][0]
+    val = array[id_]
+    sorted_array = np.sort(array)[::-1]
+    return np.nonzero(sorted_array == val)[0][0]

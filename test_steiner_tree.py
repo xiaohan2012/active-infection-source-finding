@@ -5,9 +5,10 @@ from numpy.testing import assert_array_equal
 from graph_tool.all import shortest_distance, shortest_path
 
 from steiner_tree import sample_consistent_cascade, max_infection_time, \
-    all_simple_paths_of_length
-from fixtures import tree_and_cascade, grid_and_cascade, setup_module
+    all_simple_paths_of_length, best_tree_sizes
+from fixtures import tree_and_cascade, grid_and_cascade, setup_function
 from ic import get_infection_time, gen_nontrivial_cascade
+from utils import get_rank_index
 
 
 def test_paths_length_tree_no_path(tree_and_cascade):
@@ -119,3 +120,32 @@ def test_sample_consistent_cascade_grid(grid_and_cascade):
                 count += 1
         print('{} / {} are possible'.format(count, g.num_vertices()))
         
+
+def test_best_tree_sizes_tree(tree_and_cascade):
+    g, _, infection_times, source, obs_nodes = tree_and_cascade
+    scores = best_tree_sizes(g, obs_nodes, infection_times)
+    print('|possible_nodes|={}'.format(np.sum(np.invert(np.isinf(scores)))))
+    print(scores[source], scores.min())
+    assert get_rank_index(-scores, source) <= 3
+
+
+def test_best_tree_sizes_grid(grid_and_cascade):
+    g, _, infection_times, source, obs_nodes = grid_and_cascade
+    scores = best_tree_sizes(g, obs_nodes, infection_times)
+    assert get_rank_index(-scores, source) <= 1
+
+
+def test_full_observation_tree(tree_and_cascade):
+    g = tree_and_cascade[0]
+    for p in np.arange(0.2, 1.0, 0.1):
+        infection_times, source, obs_nodes = gen_nontrivial_cascade(g, p, 1.0)
+        scores = best_tree_sizes(g, obs_nodes, infection_times)
+        assert get_rank_index(-scores, source) == 0
+
+
+def test_full_observation_grid(grid_and_cascade):
+    g = grid_and_cascade[0]
+    for p in np.arange(0.5, 1.0, 0.1):
+        infection_times, source, obs_nodes = gen_nontrivial_cascade(g, p, 1.0)
+        scores = best_tree_sizes(g, obs_nodes, infection_times)
+        assert get_rank_index(-scores, source) == 0

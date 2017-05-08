@@ -157,3 +157,22 @@ def sample_consistent_cascade(g, obs_nodes, cand_source, infection_times, debug=
     if debug:
         print(obs_nodes)
     return gv
+
+
+def best_tree_sizes(g, obs_nodes, infection_times):
+    """score for each node in terms of the size of the inferred tree
+    the smaller the better
+    """
+    possible_nodes = set(np.arange(g.num_vertices())) - set(obs_nodes)
+
+    tree_sizes = np.zeros(g.num_vertices())
+    for cand_source in np.arange(g.num_vertices()):
+        succeed = False
+        if cand_source in possible_nodes:
+            gv = sample_consistent_cascade(g, obs_nodes, cand_source, infection_times, debug=False)
+            if gv is not None:
+                tree_sizes[cand_source] = gv.num_edges()
+                succeed = True
+        if not succeed:
+            tree_sizes[cand_source] = float('inf')
+    return tree_sizes
