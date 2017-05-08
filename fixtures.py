@@ -34,4 +34,19 @@ def line_infection():
 def tree_and_cascade():
     g = load_graph('data/balanced-tree/2-6/graph.gt')
     c, s, o = gen_nontrivial_cascade(g, 0.8, 0.2)
-    return g, get_gvs(g, 0.8, 100), c, s, o
+    return g, get_gvs(g, 0.5, 100), c, s, o
+
+
+@pytest.fixture
+def grid_and_cascade():
+    g = load_graph('data/grid/2-6/graph.gt')
+    c, s, o = gen_nontrivial_cascade(g, 0.8, 0.2)
+    return g, get_gvs(g, 0.5, 100), c, s, o
+
+
+def setup_module(module):
+    import random
+    import numpy as np
+    seed = 123456
+    random.seed(seed)
+    np.random.seed(seed)
