@@ -87,7 +87,7 @@ if __name__ == '__main__':
     parser.add_argument('-g', '--gtype', required=True)
     parser.add_argument('-p', '--param', default='2-6')
     parser.add_argument('-m', '--method', default='exact')
-    parser.add_argument('-c', '--precond_method', default=None)
+    parser.add_argument('-c', '--precond_method', default='and')
     parser.add_argument('-e', '--eps', type=float, default=0.2)
     parser.add_argument('-d', '--debug', action='store_true')
     parser.add_argument('--n1', type=int, help="simulation rounds for parameter esimation", default=100)
@@ -162,9 +162,8 @@ if __name__ == '__main__':
     data = [np.array([r[name][stat] for r in rows]).reshape((len(ps), len(qs)))  # 9 x 10
             for name in names for stat in stats]
 
-    dirname = 'outputs/source-likelihood-{}-{}/{}'.format(
+    dirname = 'outputs/source-likelihood-{}/{}'.format(
         estimation_method,
-        precond_method,
         gtype)
     print(dirname)
     if DEBUG:
