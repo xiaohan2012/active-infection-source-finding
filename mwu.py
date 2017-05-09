@@ -41,7 +41,7 @@ def mwu(g, gvs,
     if o2src_time is None:
         o2src_time = get_o2src_time(obs_nodes, gvs, debug=debug)
 
-    if reward_method == 'dist':
+    if reward_method == 'time-diff':
         sp_len_dict = {o: shortest_distance(g, source=o).a for o in obs_nodes}
     else:
         sp_len_dict = None
@@ -113,7 +113,7 @@ def mwu(g, gvs,
             if debug:
                 print('using pairs to update sll')
             # the query is infected
-            if reward_method == 'dist':
+            if reward_method == 'time-diff':
                 sp_len_dict[q] = shortest_distance(g, source=q).a
 
             o2src_time[q] = np.array([get_infection_time(gv, q) for gv in gvs])
@@ -124,11 +124,11 @@ def mwu(g, gvs,
                 dists_q, dists_o = o2src_time[q], o2src_time[o]
                 mask = np.logical_and(dists_q != -1, dists_o != -1)
 
-                if reward_method == 'exact':
+                if reward_method == 'time-exact':
                     probas = exact_rewards(tq, to, dists_q, dists_o, mask)
-                elif reward_method == 'order':
+                elif reward_method == 'time-order':
                     probas = order_rewards(tq, to, dists_q, dists_o, mask)
-                elif reward_method == 'dist':
+                elif reward_method == 'time-diff':
                     try:
                         probas = dist_rewards(
                             tq, to,

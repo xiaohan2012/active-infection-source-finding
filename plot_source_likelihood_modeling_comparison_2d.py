@@ -3,6 +3,7 @@
 # In[31]:
 import matplotlib as mpl
 mpl.use('pdf')
+mpl.rcParams.update({'font.size': 26})
 
 import sys
 import os
@@ -13,10 +14,9 @@ param = '2-6'
 
 graphs = ['balanced-tree', 'grid', 'barabasi', 'er']
 methods = [
-    'steiner-None',
-    # 'exact-and',    
-    'order-and',
-    'dist-and'
+    'steiner-tree',
+    'time-order',
+    'time-diff'
 ]
 
 dirnames = list(map(lambda m: 'source-likelihood-{}'.format(m),
@@ -76,7 +76,7 @@ def main(plot_type, dirnames, param, ps_as_y):
                 else:
                     ys = m[where, :]
                 l, = ax.plot(xs,
-                             ys, 'o-')
+                             ys, 'o-', markersize=15)
                 lines.append(l)
             if ps_as_y:
                 title, xlabel = 'q={:.1f}'.format(z), 'p'

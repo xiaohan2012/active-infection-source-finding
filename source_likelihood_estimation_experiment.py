@@ -33,7 +33,7 @@ def source_likelihood_stat(g,
     for i in iters:
         infection_times, source, obs_nodes = gen_nontrivial_cascade(g, p, q)
         sources.append(source)
-        if estimation_method == 'steiner':
+        if estimation_method == 'steiner-tree':
             if debug:
                 print('using steiner tree')
             sll = best_tree_sizes(g, obs_nodes, infection_times)

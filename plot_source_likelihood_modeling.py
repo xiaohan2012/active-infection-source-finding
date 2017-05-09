@@ -10,10 +10,10 @@ param = '2-6'
 graphs = ['balanced-tree', 'grid', 'barabasi', 'er']
 
 methods = [
-    'steiner-None',
+    'steiner-tree',
     # 'exact-and',
-    'order-and',
-    'dist-and'
+    'time-order',
+    'time-diff'
 ]
 dirnames = list(map(lambda m: 'source-likelihood-{}'.format(m),
                     methods))

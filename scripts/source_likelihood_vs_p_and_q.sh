@@ -5,9 +5,9 @@ gtypes=(balanced-tree grid barabasi er)
 
 exps=(6)
 
-methods=("-m steiner"
-    "-m order -c and"
-    "-m dist -c and")
+methods=("-m steiner-tree"
+    "-m time-order -c and"
+    "-m time-diff -c and")
 
 for method in $methods; do
     for exp in $exps; do
