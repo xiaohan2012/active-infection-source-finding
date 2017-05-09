@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 
 param = '2-6'
 
-graphs = ['balanced-tree', 'grid'] # , 'barabasi', 'er'
+graphs = ['balanced-tree', 'grid', 'barabasi', 'er']
 methods = [
     'steiner-None',
     # 'exact-and',    

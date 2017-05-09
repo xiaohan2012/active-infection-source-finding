@@ -7,8 +7,7 @@ from plot_utils import plot_source_likelihood_surface as plot_surface
 from mpl_toolkits.mplot3d import Axes3D
 
 param = '2-6'
-graphs = ['balanced-tree', 'grid']
-          # , 'barabasi', 'er'
+graphs = ['balanced-tree', 'grid', 'barabasi', 'er']
 
 methods = [
     'steiner-None',
