@@ -4,7 +4,7 @@ import numpy as np
 import random
 import itertools
 
-from graph_tool.all import GraphView, shortest_distance
+from graph_tool.all import GraphView, shortest_distance, shortest_path
 from rewards import exact_rewards, order_rewards, dist_rewards
 
 from joblib import Parallel, delayed
@@ -106,7 +106,7 @@ def get_infection_time(g, source):
     return time
 
 
-def simulate_cascade(g, p, source=None):
+def simulate_cascade(g, p, source=None, return_tree=False):
     """
     graph_tool version of simulating cascade
     return np.ndarray on vertices as the infection time in cascade
@@ -117,7 +117,17 @@ def simulate_cascade(g, p, source=None):
     gv = sample_graph_by_p(g, p)
 
     times = get_infection_time(gv, source)
-    return source, times
+    if return_tree:
+        efilt = gv.new_edge_property('bool')
+        efilt.set_2d_array(np.zeros(g.num_edges()))
+        for target in np.nonzero(times != -1)[0]:
+            _, edges = shortest_path(gv, source=source, target=gv.vertex(target))
+            for e in edges:
+                efilt[e] = True
+        tree = GraphView(g, efilt=efilt)
+        return source, times, tree
+    else:
+        return source, times
 
 
 def observe_cascade(c, source, q, method='uniform'):
@@ -551,13 +561,18 @@ def sll_using_pairs(g,
         }
 
 
-def gen_nontrivial_cascade(g, p, q, source=None):
+def gen_nontrivial_cascade(g, p, q, source=None, return_tree=False):
     while True:
-        source, c = simulate_cascade(g, p, source=source)
+        rts = simulate_cascade(g, p, source=source, return_tree=return_tree)
+        source, c = rts[:2]
+        if return_tree:
+            tree = rts[2]
         obs_nodes = observe_cascade(c, source, q, method='uniform')
         cascade_size = np.sum(c != -1)
         
         if cascade_size >= 5:  # avoid small cascade
             break
-        
-    return c, source, obs_nodes
+    if return_tree:
+        return c, source, obs_nodes, tree
+    else:
+        return c, source, obs_nodes
