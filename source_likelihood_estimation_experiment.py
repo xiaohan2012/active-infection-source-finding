@@ -9,7 +9,8 @@ from graph_tool.all import shortest_distance
 from ic import get_o2src_time, get_gvs, \
     sll_using_pairs, gen_nontrivial_cascade
 from utils import get_rank_index
-from steiner_tree import best_tree_sizes
+from steiner_tree_exact import best_tree_sizes
+from steiner_tree_order import tree_sizes_by_roots
 
 
 def source_likelihood_stat(g,
@@ -33,10 +34,15 @@ def source_likelihood_stat(g,
     for i in iters:
         infection_times, source, obs_nodes = gen_nontrivial_cascade(g, p, q)
         sources.append(source)
-        if estimation_method == 'steiner-tree':
+        if estimation_method == 'steiner-tree-exact':
             if debug:
-                print('using steiner tree')
+                print('using steiner tree exact')
             sll = best_tree_sizes(g, obs_nodes, infection_times)
+        elif estimation_method == 'steiner-tree-order':
+            if debug:
+                print('using steiner tree order')
+            sll = tree_sizes_by_roots(g, obs_nodes, infection_times, source,
+                                      method='sync_tbfs')
         else:
             if cache_simulation:
                 # cache the simulation result

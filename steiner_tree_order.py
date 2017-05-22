@@ -66,26 +66,6 @@ def temporal_bfs(g, r, infection_times, source, obs_nodes, debug=False):
         return min_tree
 
 
-def tree_sizes_by_roots(g, obs_nodes, infection_times, source, method='sync_tbfs'):
-    """
-    use temporal BFS to get the scores for each node in terms of the negative size of the inferred tree
-    thus, the larger the better
-    """
-    assert method in {'sync_tbfs', 'tbfs'}
-    cand_sources = set(np.arange(g.num_vertices())) - set(obs_nodes)
-
-    tree_sizes = np.ones(g.num_vertices()) * float('inf')
-    for r in cand_sources:
-        if method == 'tbfs':
-            tree = temporal_bfs(g, r, infection_times, source, obs_nodes, debug=False)
-        else:
-            tree = temporal_bfs_sync(g, r, infection_times, source, obs_nodes, debug=False)
-        if tree:
-            tree_sizes[r] = tree.num_edges()
-
-    return -tree_sizes
-
-
 def remove_redundant_edges_from_tree(g, tree, r, terminals):
     """given a set of edges, a root, and terminals to cover,
     return a new tree with redundant edges removed"""
@@ -179,3 +159,23 @@ def temporal_bfs_sync(g, r, infection_times, source, obs_nodes, debug=False):
         return remove_redundant_edges_from_tree(g, tree, r, obs_nodes)
     else:
         return None
+
+
+def tree_sizes_by_roots(g, obs_nodes, infection_times, source, method='sync_tbfs'):
+    """
+    use temporal BFS to get the scores for each node in terms of the negative size of the inferred tree
+    thus, the larger the better
+    """
+    assert method in {'sync_tbfs', 'tbfs'}
+    cand_sources = set(np.arange(g.num_vertices())) - set(obs_nodes)
+
+    tree_sizes = np.ones(g.num_vertices()) * float('inf')
+    for r in cand_sources:
+        if method == 'tbfs':
+            tree = temporal_bfs(g, r, infection_times, source, obs_nodes, debug=False)
+        else:
+            tree = temporal_bfs_sync(g, r, infection_times, source, obs_nodes, debug=False)
+        if tree:
+            tree_sizes[r] = tree.num_edges()
+
+    return -tree_sizes    
