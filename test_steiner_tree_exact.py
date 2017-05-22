@@ -4,7 +4,7 @@ import numpy as np
 from numpy.testing import assert_array_equal
 from graph_tool.all import shortest_distance, shortest_path
 
-from steiner_tree import sample_consistent_cascade, max_infection_time, \
+from steiner_tree_exact import sample_consistent_cascade, max_infection_time, \
     all_simple_paths_of_length, best_tree_sizes
 from fixtures import tree_and_cascade, grid_and_cascade, setup_function
 from ic import get_infection_time, gen_nontrivial_cascade

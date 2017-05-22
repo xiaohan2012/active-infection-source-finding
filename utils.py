@@ -110,8 +110,14 @@ def sp_len_2d(g, dtype=np.float64):
 
 def get_rank_index(array, id_):
     """if value of array[id_] is not unqiue, take the middle
+    the larger the better
     """
     val = array[id_]
     sorted_array = np.sort(array)[::-1]
     idx = np.nonzero(sorted_array == val)[0]
     return idx[0] - 1 + np.ceil(len(idx) / 2)
+
+
+def extract_edges(g):
+    return [(int(u), int(v)) for u, v in g.edges()]
+    
