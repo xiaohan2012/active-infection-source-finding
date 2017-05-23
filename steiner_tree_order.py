@@ -65,7 +65,7 @@ def temporal_bfs(g, r, infection_times, source, obs_nodes, debug=False):
         min_tree = GraphView(g, efilt=min_tree_efilt)
         return min_tree
 
-
+@profile
 def remove_redundant_edges_from_tree(g, tree, r, terminals):
     """given a set of edges, a root, and terminals to cover,
     return a new tree with redundant edges removed"""
@@ -79,6 +79,8 @@ def remove_redundant_edges_from_tree(g, tree, r, terminals):
     min_tree_efilt.set_2d_array(np.zeros(g.num_edges()))
     for o in terminals:
         if o != r:
+            tree.vertex(r)
+            tree.vertex(o)
             _, edge_list = shortest_path(tree, source=tree.vertex(r), target=tree.vertex(o))
             assert len(edge_list) > 0, 'unable to reach {} from {}'.format(o, r)
             for e in edge_list:
@@ -107,12 +109,12 @@ def tree_sizes_by_roots(g, obs_nodes, infection_times, source, method='sync_tbfs
     return -tree_sizes
 
 
+# @profile
 def temporal_bfs_sync(g, r, infection_times, source, obs_nodes, debug=False):
     t_lower = np.ones(g.num_vertices(), dtype=np.int32) * -1  # hidden nodes has lower bound -1
     t_lower[obs_nodes] = infection_times[obs_nodes]
     t_lower[r] = infection_times[obs_nodes].min() - 1
-    visited = g.new_vertex_property('bool')
-    visited.set_2d_array(np.zeros(g.num_vertices(), dtype=bool))
+    visited = np.zeros(g.num_vertices(), dtype=bool)
     tree = []
 
     obs_by_time = defaultdict(list)
@@ -132,16 +134,16 @@ def temporal_bfs_sync(g, r, infection_times, source, obs_nodes, debug=False):
             print('targets {}'.format(target_nodes))
         # cover nodes of level t
         while len(queue) > 0:
-            if np.all(visited.a[target_nodes] == 1):
+            if np.all(visited[target_nodes] == 1):
                 if debug:
                     print('covered all targets')
                 break
             v = queue.pop(0)
             for u in g.vertex(v).all_neighbours():
                 u = int(u)
-                if u not in banned_nodes and visited[g.vertex(u)] == 0:
+                if u not in banned_nodes and visited[u] == 0:
                     if debug and u in target_nodes:
-                        print('cover target {}'.format(u))                    
+                        print('cover target {}'.format(u))
                     if debug:
                         print('add edge {}'.format((v, u)))
                     if u in target_nodes:
@@ -151,8 +153,8 @@ def temporal_bfs_sync(g, r, infection_times, source, obs_nodes, debug=False):
                     else:
                         queue.append(u)
                     tree.append((v, u))
-                    visited[u] = True                    
-        if np.all(visited.a[target_nodes] == 1):  # all targets covered
+                    visited[u] = 1
+        if np.all(visited[target_nodes] == 1):  # all targets covered
             if True:
                 # remove redundant edges
                 # construct the tree from used edges
@@ -168,7 +170,7 @@ def temporal_bfs_sync(g, r, infection_times, source, obs_nodes, debug=False):
                     print('current tree edges {}'.format(tree))
 
                 # update visited table
-                visited.set_2d_array(np.zeros(g.num_vertices()))
+                visited.fill(0)
                 covered_nodes = {u for nodes in tree for u in nodes}
                 sorted_by_time = list(sorted(
                     covered_nodes,
@@ -178,8 +180,8 @@ def temporal_bfs_sync(g, r, infection_times, source, obs_nodes, debug=False):
                     print('covered nodes: {}'.format(sorted_by_time))
                 queue = []
                 for v in sorted_by_time:
-                    visited[g.vertex(v)] = 1
-                    queue.append(int(v))
+                    visited[v] = 1
+                    queue.append(v)
                 if debug:
                     print('current queue: {}'.format(queue))
             continue
@@ -190,5 +192,5 @@ def temporal_bfs_sync(g, r, infection_times, source, obs_nodes, debug=False):
             break
     if success:
         return remove_redundant_edges_from_tree(g, tree, r, obs_nodes)
-    else:        
+    else:
         return None
