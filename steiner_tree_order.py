@@ -4,23 +4,23 @@ from collections import defaultdict
 from utils import extract_edges
 
 # DEPRECATED
-def temporal_bfs(g, r, infection_times, source, obs_nodes, debug=False):
+def temporal_bfs(g, r, D, infection_times, source, obs_nodes, debug=False):
     """return the tree covering obs_nodes"""
     queue = [r]
     t_lower = np.ones(g.num_vertices(), dtype=np.int32) * -1  # hidden nodes has lower bound -1
     t_lower[obs_nodes] = infection_times[obs_nodes]
-    t_lower[r] = infection_times[obs_nodes].min() - 1
-    visited = g.new_vertex_property('bool')
-    visited.set_2d_array(np.zeros(g.num_vertices(), dtype=bool))
+    t_lower[r] = D
+    visited = np.zeros(g.num_vertices(), dtype=bool)
     tree = []
-    while len(queue) > 0 and np.any(visited.a[obs_nodes] == 0):
+    while len(queue) > 0 and np.any(visited[obs_nodes] == 0):
         v = queue.pop(0)
 
         if debug:
             print('visiting {}'.format(v))
 
-        visited[g.vertex(v)] = True
+        visited[v] = True
         for u in g.vertex(v).all_neighbours():
+            u = int(u)
             if debug:
                 print('trying its nbr {}'.format(u))
 
@@ -28,7 +28,6 @@ def temporal_bfs(g, r, infection_times, source, obs_nodes, debug=False):
                 if debug:
                     print('{} is not visited'.format(u))
                     print('t_l[u]={}, t_l[v]={}'.format(t_lower[u], t_lower[v]))
-                u = int(u)
                 visitable = False
 
                 if t_lower[u] > t_lower[v]:
@@ -47,25 +46,14 @@ def temporal_bfs(g, r, infection_times, source, obs_nodes, debug=False):
                         print('add {} to queue'.format(u))
                     queue.append(u)
                     tree.append((v, u))
-                    visited[g.vertex(u)] = True
-    if np.any(visited.a[obs_nodes] == 0):
+                    visited[u] = True
+    if np.any(visited[obs_nodes] == 0):
         # some terminal is uncovered
         return False
     else:
-        efilt = g.new_edge_property('bool')
-        for u, v in tree:
-            efilt[g.edge(u, v)] = True
-        
-        min_tree_efilt = g.new_edge_property('bool')
-        tree = GraphView(g, efilt=efilt)
-        for o in obs_nodes:
-            _, edge_list = shortest_path(tree, source=tree.vertex(r), target=tree.vertex(o))
-            for e in edge_list:
-                min_tree_efilt[e] = True
-        min_tree = GraphView(g, efilt=min_tree_efilt)
-        return min_tree
+        return remove_redundant_edges_from_tree(g, tree, r, obs_nodes)
 
-@profile
+# @profile
 def remove_redundant_edges_from_tree(g, tree, r, terminals):
     """given a set of edges, a root, and terminals to cover,
     return a new tree with redundant edges removed"""
@@ -100,7 +88,11 @@ def tree_sizes_by_roots(g, obs_nodes, infection_times, source, method='sync_tbfs
     tree_sizes = np.ones(g.num_vertices()) * float('inf')
     for r in cand_sources:
         if method == 'tbfs':
-            tree = temporal_bfs(g, r, infection_times, source, obs_nodes, debug=False)
+            early_node = min(obs_nodes, key=infection_times.__getitem__)
+            t_min = infection_times[early_node]
+            D = t_min - shortest_distance(g, source=g.vertex(r), target=g.vertex(early_node))
+            # print('D: {}'.format(D))
+            tree = temporal_bfs(g, r, D, infection_times, source, obs_nodes, debug=False)
         else:
             tree = temporal_bfs_sync(g, r, infection_times, source, obs_nodes, debug=False)
         if tree:

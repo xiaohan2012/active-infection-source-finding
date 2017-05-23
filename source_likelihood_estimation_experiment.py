@@ -38,11 +38,16 @@ def source_likelihood_stat(g,
             if debug:
                 print('using steiner tree exact')
             sll = best_tree_sizes(g, obs_nodes, infection_times)
-        elif estimation_method == 'steiner-tree-order':
+        elif estimation_method == 'sync_tbfs':
+            if debug:
+                print('using steiner tree order (synchronized)')
+            sll = tree_sizes_by_roots(g, obs_nodes, infection_times, source,
+                                      method='sync_tbfs')
+        elif estimation_method == 'tbfs':
             if debug:
                 print('using steiner tree order')
             sll = tree_sizes_by_roots(g, obs_nodes, infection_times, source,
-                                      method='sync_tbfs')
+                                      method='tbfs')
         else:
             if cache_simulation:
                 # cache the simulation result
