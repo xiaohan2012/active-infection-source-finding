@@ -33,14 +33,14 @@ def line_infection():
 @pytest.fixture
 def tree_and_cascade():
     g = load_graph('data/balanced-tree/2-6/graph.gt')
-    c, s, o = gen_nontrivial_cascade(g, 0.8, 0.2)
+    c, s, o = gen_nontrivial_cascade(g, 0.8, 0.5)
     return g, get_gvs(g, 0.5, 100), c, s, o
 
 
 @pytest.fixture
 def grid_and_cascade():
     g = load_graph('data/grid/2-6/graph.gt')
-    c, s, o = gen_nontrivial_cascade(g, 0.8, 0.2)
+    c, s, o = gen_nontrivial_cascade(g, 0.8, 0.5)
     return g, get_gvs(g, 0.5, 100), c, s, o
 
 

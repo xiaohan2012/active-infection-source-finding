@@ -85,7 +85,7 @@ def main(plot_type, dirnames, param, ps_as_y):
                 title, xlabel = 'p={:.1f}'.format(z), 'q'
             ax.set_title(title)
             ax.set_xlabel(xlabel)
-
+            ax.set_xticks(np.linspace(0.1, 1.1, 0.3))
             if plot_type.startswith('ratio'):
                 ax.set_xlim([0, 1])
                 ax.set_ylim([0, 1])
