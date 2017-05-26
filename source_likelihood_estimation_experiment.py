@@ -48,6 +48,11 @@ def source_likelihood_stat(g,
                 print('using steiner tree order')
             sll = tree_sizes_by_roots(g, obs_nodes, infection_times, source,
                                       method='tbfs')
+        elif estimation_method == 'mst':
+            if debug:
+                print('using minimum spanning tree approach')
+            sll = tree_sizes_by_roots(g, obs_nodes, infection_times, source,
+                                      method='mst')
         else:
             if cache_simulation:
                 # cache the simulation result

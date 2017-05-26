@@ -121,3 +121,23 @@ def get_rank_index(array, id_):
 def extract_edges(g):
     return [(int(u), int(v)) for u, v in g.edges()]
     
+
+def gt2nx(g, root, terminals, node_attrs=None, edge_attrs=None):
+    if g.is_directed():
+        gx = nx.DiGraph()
+    else:
+        gx = nx.Graph()
+
+    for v in terminals + [root]:
+        gx.add_node(v)
+        if node_attrs is not None:
+            for name, node_attr in node_attrs.items():
+                gx.node[v][name] = node_attr[g.vertex(v)]
+                
+    for e in g.edges():
+        u, v = int(e.source()), int(e.target())
+        gx.add_edge(u, v)
+        if edge_attrs is not None:
+            for name, edge_attr in edge_attrs.items():
+                gx[u][v][name] = edge_attr[e]
+    return gx

@@ -82,7 +82,7 @@ def tree_sizes_by_roots(g, obs_nodes, infection_times, source, method='sync_tbfs
     use temporal BFS to get the scores for each node in terms of the negative size of the inferred tree
     thus, the larger the better
     """
-    assert method in {'sync_tbfs', 'tbfs'}
+    assert method in {'sync_tbfs', 'tbfs', 'mst'}
     cand_sources = set(np.arange(g.num_vertices())) - set(obs_nodes)
 
     tree_sizes = np.ones(g.num_vertices()) * float('inf')
@@ -93,8 +93,12 @@ def tree_sizes_by_roots(g, obs_nodes, infection_times, source, method='sync_tbfs
             D = t_min - shortest_distance(g, source=g.vertex(r), target=g.vertex(early_node))
             # print('D: {}'.format(D))
             tree = temporal_bfs(g, r, D, infection_times, source, obs_nodes, debug=False)
-        else:
+        elif method == 'sync_tbfs':
             tree = temporal_bfs_sync(g, r, infection_times, source, obs_nodes, debug=False)
+        elif method == 'mst':
+            from steiner_tree_mst import steiner_tree_mst
+            tree = steiner_tree_mst(g, r, infection_times, source,
+                                    terminals=list(obs_nodes), debug=False)
         if tree:
             tree_sizes[r] = tree.num_edges()
 
