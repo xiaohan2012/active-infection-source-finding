@@ -1,6 +1,7 @@
 import networkx as nx
 import numpy as np
 from graph_tool.all import GraphView, pbfs_search, BFSVisitor, Graph
+from graph_tool.search import cpbfs_search
 from utils import gt2nx
 
 
@@ -68,52 +69,61 @@ def init_visitor(g, root):
     return vis
 
 
-def build_closure(g, cand_source, terminals, infection_times, k=-1):
+def build_closure(g, cand_source, terminals, infection_times, k=-1, debug=False):
     """
     build a clojure graph in which cand_source + terminals are all connected to each other.
     the number of neighbors of each node is determined by k
-    
+
     the larger the k, the denser the graph"""
     r2pred = {}
     edges = {}
-    
+    terminals = list(terminals)
+
     def get_edges(dist, root, terminals):
         return ((root, t, dist[t])
                 for t in terminals
                 if dist[t] != -1 and t != root)
-    
+
     # from cand_source to terminals
     vis = init_visitor(g, cand_source)
     pbfs_search(g, source=cand_source, visitor=vis, terminals=terminals, count_threshold=k)
     r2pred[cand_source] = vis.pred
     for u, v, c in get_edges(vis.dist, cand_source, terminals):
         edges[(u, v)] = c
-    
+    if debug:
+        print('cand_source: {}'.format(cand_source))
+        print('#terminals: {}'.format(len(terminals)))
+        print('edges from cand_source: {}'.format(edges))
     # from terminal to other terminals
     for root in terminals:
         vis = init_visitor(g, root)
         early_terminals = [t for t in terminals
                            if infection_times[t] > infection_times[root]]
-        pbfs_search(g, source=root,
-                    visitor=vis,
-                    terminals=early_terminals,
-                    count_threshold=k)
+        if debug:
+            print('root: {}'.format(root))
+            print('early_terminals: {}'.format(early_terminals))
+        cpbfs_search(g, source=root,
+                     visitor=vis,
+                     terminals=early_terminals,
+                     forbidden_nodes=list(set(terminals) - set(early_terminals)),
+                     count_threshold=k)
         r2pred[root] = vis.pred
         for u, v, c in get_edges(vis.dist, root, early_terminals):
+            if debug:
+                print('edge ({}, {})'.format(u, v))
             edges[(u, v)] = c
-    
+
     gc = Graph(directed=True)
-    
+
     for _ in range(g.num_vertices()):
         gc.add_vertex()
 
     for (u, v) in edges:
         gc.add_edge(u, v)
-    
+
     eweight = gc.new_edge_property('int')
     for e, c in edges.items():
         eweight[e] = c
-        # print(e, c)
     return gc, eweight, r2pred
 
 
