@@ -18,7 +18,6 @@ def source_likelihood_stat(g,
                            estimation_method,
                            precond_method,
                            eps,
-                           cache_simulation=True,
                            debug=True):
     sll_array = []
     sources = []
@@ -29,8 +28,6 @@ def source_likelihood_stat(g,
     else:
         iters = range(N1)
 
-    if cache_simulation:
-        simulation_cache = {}
     for i in iters:
         infection_times, source, obs_nodes = gen_nontrivial_cascade(g, p, q)
         sources.append(source)
@@ -38,44 +35,11 @@ def source_likelihood_stat(g,
             if debug:
                 print('using steiner tree exact')
             sll = best_tree_sizes(g, obs_nodes, infection_times)
-        elif estimation_method == 'sync_tbfs':
-            if debug:
-                print('using steiner tree order (synchronized)')
-            sll = tree_sizes_by_roots(g, obs_nodes, infection_times, source,
-                                      method='sync_tbfs')
-        elif estimation_method == 'tbfs':
-            if debug:
-                print('using steiner tree order')
-            sll = tree_sizes_by_roots(g, obs_nodes, infection_times, source,
-                                      method='tbfs')
-        elif estimation_method == 'mst':
-            if debug:
-                print('using minimum spanning tree approach')
-            sll = tree_sizes_by_roots(g, obs_nodes, infection_times, source,
-                                      method='mst')
         else:
-            if cache_simulation:
-                # cache the simulation result
-                o2src_time = get_o2src_time(set(obs_nodes) - set(simulation_cache.keys()),
-                                            gvs,
-                                            debug=debug)
-                simulation_cache.update(o2src_time)
-            else:
-                o2src_time = get_o2src_time(obs_nodes,
-                                            gvs,
-                                            debug=debug)
-                simulation_cache = o2src_time
-
-            source_estimation_params_gt = {
-                'g': g,
-                'obs_nodes': obs_nodes,
-                'o2src_time': simulation_cache,
-                'infection_times': infection_times,
-                'method': estimation_method,
-                'precond_method': precond_method,
-                'eps': eps
-            }
-            sll = sll_using_pairs(**source_estimation_params_gt)
+            if debug:
+                print('using steiner tree order ({})'.format(estimation_method))
+            sll = tree_sizes_by_roots(g, obs_nodes, infection_times, source,
+                                      method=estimation_method)
 
         winner = np.argmax(sll)
         dist_to_max_n = shortest_distance(g, source=source, target=winner)
@@ -118,8 +82,6 @@ if __name__ == '__main__':
     parser.add_argument('--qs', type=float, help="step size of q", default=0.1)
 
     parser.add_argument('--n_jobs', type=int, default=-1, help="number of cores to use")
-    parser.add_argument('--cache_sim', action='store_true',
-                        help="whether caching simulation or not, if activated, can be memory consuming")
 
     args = parser.parse_args()
     gtype = args.gtype
@@ -147,7 +109,6 @@ if __name__ == '__main__':
     print('N2: {}'.format(N2))
     print('ps: {}'.format(ps))
     print('qs: {}'.format(qs))
-    print('cache_simulation: {}'.format(args.cache_sim))
 
     p2gvs = {p: get_gvs(g, p, N2) for p in ps}
 
@@ -158,7 +119,6 @@ if __name__ == '__main__':
             estimation_method=estimation_method,
             precond_method=precond_method,
             eps=eps,
-            cache_simulation=args.cache_sim,
             debug=DEBUG)
                                    for p in tqdm(ps) for q in qs)
     else:
@@ -168,7 +128,6 @@ if __name__ == '__main__':
             estimation_method=estimation_method,
             precond_method=precond_method,
             eps=eps,
-            cache_simulation=args.cache_sim,
             debug=DEBUG)
             for p in tqdm(ps) for q in qs]
 

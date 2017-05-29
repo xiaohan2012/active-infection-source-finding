@@ -90,3 +90,33 @@ def test_full_observation_grid_mst(grid_and_cascade):
         scores = tree_sizes_by_roots(g, obs_nodes, infection_times, source,
                                      method='mst')
         assert get_rank_index(scores, source) == 0
+
+
+
+## for region mst
+
+def test_best_tree_sizes_grid_region_mst(grid_and_cascade):
+    g, _, infection_times, source, obs_nodes = grid_and_cascade
+    scores = tree_sizes_by_roots(g, obs_nodes, infection_times, source,
+                                 method='region_mst')
+    assert get_rank_index(scores, source) <= 1
+
+
+def test_full_observation_tree_region_mst(tree_and_cascade):
+    g = tree_and_cascade[0]
+    for p in np.arange(0.2, 1.0, 0.1):
+        infection_times, source, obs_nodes = gen_nontrivial_cascade(g, p, 1.0)
+        scores = tree_sizes_by_roots(g, obs_nodes, infection_times, source,
+                                     method='region_mst')
+        assert get_rank_index(scores, source) == 0
+
+
+def test_full_observation_grid_region_mst(grid_and_cascade):
+    g = grid_and_cascade[0]
+    for p in np.arange(0.5, 1.0, 0.1):
+        print('p={}'.format(p))
+        infection_times, source, obs_nodes = gen_nontrivial_cascade(g, p, 1.0)
+        scores = tree_sizes_by_roots(g, obs_nodes, infection_times, source,
+                                     method='region_mst')
+        assert get_rank_index(scores, source) <= 0
+        

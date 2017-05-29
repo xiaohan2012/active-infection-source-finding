@@ -77,15 +77,16 @@ def remove_redundant_edges_from_tree(g, tree, r, terminals):
     return min_tree
 
 
-def tree_sizes_by_roots(g, obs_nodes, infection_times, source, method='sync_tbfs'):
+def tree_sizes_by_roots(g, obs_nodes, infection_times, source, method='sync_tbfs', return_trees=False):
     """
     use temporal BFS to get the scores for each node in terms of the negative size of the inferred tree
     thus, the larger the better
     """
-    assert method in {'sync_tbfs', 'tbfs', 'mst'}
+    assert method in {'sync_tbfs', 'tbfs', 'mst', 'region_mst'}
     cand_sources = set(np.arange(g.num_vertices())) - set(obs_nodes)
 
     tree_sizes = np.ones(g.num_vertices()) * float('inf')
+    trees = {}
     for r in cand_sources:
         if method == 'tbfs':
             early_node = min(obs_nodes, key=infection_times.__getitem__)
@@ -99,10 +100,20 @@ def tree_sizes_by_roots(g, obs_nodes, infection_times, source, method='sync_tbfs
             from steiner_tree_mst import steiner_tree_mst
             tree = steiner_tree_mst(g, r, infection_times, source,
                                     terminals=list(obs_nodes), debug=False)
+        elif method == 'region_mst':
+            from steiner_tree_region_mst import steiner_tree_region_mst
+            tree = steiner_tree_region_mst(g, r, infection_times, source,
+                                           terminals=list(obs_nodes), debug=False)
         if tree:
             tree_sizes[r] = tree.num_edges()
 
-    return -tree_sizes
+        if return_trees:
+            trees[r] = tree
+
+    if return_trees:
+        return -tree_sizes, trees
+    else:
+        return -tree_sizes
 
 
 # @profile

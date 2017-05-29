@@ -4,6 +4,18 @@ from graph_tool.all import GraphView, pbfs_search, BFSVisitor, Graph
 from utils import gt2nx
 
 
+def extract_edges_from_pred(g, source, target, pred):
+    edges = set()
+    c = target
+    while c != source:
+        if pred[c] != -1:
+            edges.add((pred[c], c))
+            c = pred[c]
+        else:
+            break
+    return edges
+
+
 def extract_tree(g, source, pred, terminals=None):
     """return a tree from source to terminals based on `pred`"""
     edges = set()

@@ -2,7 +2,7 @@ import numpy as np
 import networkx as nx
 from collections import Counter
 from functools import reduce
-
+from graph_tool import GraphView
 
 
 # @profile
@@ -141,3 +141,14 @@ def gt2nx(g, root, terminals, node_attrs=None, edge_attrs=None):
             for name, edge_attr in edge_attrs.items():
                 gx[u][v][name] = edge_attr[e]
     return gx
+
+
+def edges2graph(g, edges):
+    def get_edge(g, u, v):
+        return g.edge(g.vertex(u), g.vertex(v))
+    efilt = g.new_edge_property('bool')        
+    efilt.a = False
+    for u, v in edges:
+        efilt[get_edge(g, u, v)] = True
+    return GraphView(g, directed=True, efilt=efilt)
+
