@@ -1,54 +1,47 @@
-import networkx as nx
-import random
+import math
 import numpy as np
 
-# @Deprecated
-def generate_cascade_old(g):
-    """shit: just use Dijkstra!!
+
+def observe_cascade(c, source, q, method='uniform', source_includable=False):
+    """graph_tool version of make_partial_cascade
     """
-    g = g.copy()
-    source = random.choice(g.nodes())
-    infected = {source}
-    infected_times = {source: 0}
-    iter_n = 0
+    all_infection = np.nonzero(c != -1)[0]
+    if not source_includable:
+        all_infection = list(set(all_infection) - {source})
+    num_obs = int(math.ceil(len(all_infection) * q))
+
+    if num_obs < 2:
+        num_obs = 2
+
+    if method == 'uniform':
+        return np.random.permutation(all_infection)[:num_obs]
+    elif method == 'late':
+        return np.argsort(c)[-num_obs:]
+
+
+def gen_nontrivial_cascade(g, p, q, model, source=None, return_tree=False, source_includable=False):
+    assert model in {'ic', 'si', 'sp'}
     while True:
-        iter_n += 1
-        newly_infected = set()
-        for u in infected:
-            can_continue = False
-            for v in g.neighbors(u):
-                if v not in infected and not g[u][v].get('attempted', False):
-                    # print('infected node: {}'.format(v))
-                    can_continue = True
-                    p_uv = 0.5  # proba of getting infected
-                    if random.random() < p_uv:
-                        newly_infected.add(v)
-                        infected_times[v] = iter_n
-                    g[u][v]['attempted'] = True
-        infected |= newly_infected
-        if not can_continue:
-            break
-    return infected_times
-
-
-def generate_cascade(g):
-    source = random.choice(g.nodes())
-
-    rands = np.random.rand(g.number_of_edges())
-    active_edges = [(u, v) for (u, v), r in zip(g.edges_iter(), rands) if g[u][v]['p'] >= r]
-    induced_g = nx.Graph()
-    induced_g.add_edges_from(active_edges)
-    for u, v in induced_g.edges_iter():
-        induced_g[u][v]['d'] = g[u][v]['d']
+        if model == 'ic':
+            from ic import simulate_cascade
+            rts = simulate_cascade(g, p, source=source, return_tree=return_tree)
+        elif model == 'si':
+            from si import gen_cascade
+            rts = gen_cascade(g, p, source=source)
+        elif model == 'sp':
+            from sp import gen_cascade
+            rts = gen_cascade(g, source=source)
         
-    if not induced_g.has_node(source):
-        infection_times = {n: float('inf') for n in g.nodes_iter()}
-        infection_times[source] = 0
+        source, c = rts[:2]
+        if return_tree:
+            tree = rts[2]
+        obs_nodes = observe_cascade(c, source, q, method='uniform',
+                                    source_includable=source_includable)
+        cascade_size = np.sum(c != -1)
+        
+        if cascade_size >= 5:  # avoid small cascade
+            break
+    if return_tree:
+        return c, source, obs_nodes, tree
     else:
-        infection_times = nx.shortest_path_length(induced_g, source=source, weight='d')
-        for n in g.nodes_iter():
-            if n not in infection_times:
-                infection_times[n] = float('inf')
-    assert infection_times[source] == 0
-    assert len(infection_times) == g.number_of_nodes()
-    return infection_times
+        return c, source, obs_nodes
