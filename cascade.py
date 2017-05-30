@@ -19,7 +19,7 @@ def observe_cascade(c, source, q, method='uniform', source_includable=False):
         return np.argsort(c)[-num_obs:]
 
 
-def gen_nontrivial_cascade(g, p, q, model, source=None, return_tree=False, source_includable=False):
+def gen_nontrivial_cascade(g, p, q, model='ic', source=None, return_tree=False, source_includable=False):
     assert model in {'ic', 'si', 'sp'}
     while True:
         if model == 'ic':

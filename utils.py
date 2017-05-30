@@ -128,7 +128,7 @@ def gt2nx(g, root, terminals, node_attrs=None, edge_attrs=None):
     else:
         gx = nx.Graph()
 
-    for v in terminals + [root]:
+    for v in set(terminals) | {root}:
         gx.add_node(v)
         if node_attrs is not None:
             for name, node_attr in node_attrs.items():
@@ -146,7 +146,7 @@ def gt2nx(g, root, terminals, node_attrs=None, edge_attrs=None):
 def edges2graph(g, edges):
     def get_edge(g, u, v):
         return g.edge(g.vertex(u), g.vertex(v))
-    efilt = g.new_edge_property('bool')        
+    efilt = g.new_edge_property('bool')
     efilt.a = False
     for u, v in edges:
         efilt[get_edge(g, u, v)] = True

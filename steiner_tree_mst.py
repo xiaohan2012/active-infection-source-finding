@@ -69,7 +69,9 @@ def init_visitor(g, root):
     return vis
 
 
-def build_closure(g, cand_source, terminals, infection_times, k=-1, debug=False):
+def build_closure(g, cand_source, terminals, infection_times, k=-1,
+                  strictly_smaller=True,
+                  debug=False):
     """
     build a clojure graph in which cand_source + terminals are all connected to each other.
     the number of neighbors of each node is determined by k
@@ -97,18 +99,24 @@ def build_closure(g, cand_source, terminals, infection_times, k=-1, debug=False)
     # from terminal to other terminals
     for root in terminals:
         vis = init_visitor(g, root)
-        early_terminals = [t for t in terminals
-                           if infection_times[t] > infection_times[root]]
+
+        if strictly_smaller:
+            late_terminals = [t for t in terminals
+                              if infection_times[t] > infection_times[root]]
+        else:
+            # respect what the paper presents
+            late_terminals = [t for t in terminals
+                              if infection_times[t] >= infection_times[root]]
         if debug:
             print('root: {}'.format(root))
-            print('early_terminals: {}'.format(early_terminals))
+            print('late_terminals: {}'.format(late_terminals))
         cpbfs_search(g, source=root,
                      visitor=vis,
-                     terminals=early_terminals,
-                     forbidden_nodes=list(set(terminals) - set(early_terminals)),
+                     terminals=late_terminals,
+                     forbidden_nodes=list(set(terminals) - set(late_terminals)),
                      count_threshold=k)
         r2pred[root] = vis.pred
-        for u, v, c in get_edges(vis.dist, root, early_terminals):
+        for u, v, c in get_edges(vis.dist, root, late_terminals):
             if debug:
                 print('edge ({}, {})'.format(u, v))
             edges[(u, v)] = c
@@ -127,8 +135,16 @@ def build_closure(g, cand_source, terminals, infection_times, k=-1, debug=False)
     return gc, eweight, r2pred
 
 
-def steiner_tree_mst(g, root, infection_times, source, terminals, return_closure=False, debug=False):
-    gc, eweight, r2pred = build_closure(g, root, terminals, infection_times)
+def steiner_tree_mst(g, root, infection_times, source, terminals,
+                     strictly_smaller=True,
+                     return_closure=False,
+                     k=-1,
+                     debug=False):
+    gc, eweight, r2pred = build_closure(g, root, terminals,
+                                        infection_times,
+                                        strictly_smaller=strictly_smaller,
+                                        k=k,
+                                        debug=debug)
     
     # get the minimum spanning arborescence
     # graph_tool does not provide minimum_spanning_arborescence
