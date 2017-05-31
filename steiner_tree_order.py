@@ -49,7 +49,7 @@ def temporal_bfs(g, r, D, infection_times, source, obs_nodes, debug=False):
                     visited[u] = True
     if np.any(visited[obs_nodes] == 0):
         # some terminal is uncovered
-        return False
+        return None
     else:
         return remove_redundant_edges_from_tree(g, tree, r, obs_nodes)
 

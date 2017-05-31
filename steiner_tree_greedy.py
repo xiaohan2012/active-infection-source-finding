@@ -39,6 +39,7 @@ def steiner_tree_greedy(
             print('dist to reachable: {}'.format(vis.dist[sorted_ancestors]))
 
         new_edges = extract_edges_from_pred(g, u, ancestor, vis.pred)
+        new_edges = {(v, u) for u, v in new_edges}  # needs to reverse the order
 
         if debug:
             print('new_edges: {}'.format(new_edges))

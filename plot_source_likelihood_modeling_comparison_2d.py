@@ -14,10 +14,8 @@ param = '2-6'
 
 graphs = ['balanced-tree', 'grid', 'barabasi', 'er']
 methods = [
-    'steiner-tree-exact',
-    'steiner-tree-order',
-    'time-order',
-    'time-diff'
+    'tbfs',
+    'mst'
 ]
 
 dirnames = list(map(lambda m: 'source-likelihood-{}'.format(m),

@@ -1,7 +1,7 @@
 import networkx as nx
 import numpy as np
 from tqdm import tqdm
-from graph_tool.all import GraphView, pbfs_search, BFSVisitor, Graph
+from graph_tool.all import GraphView, BFSVisitor, Graph
 from graph_tool.search import cpbfs_search
 from utils import gt2nx
 
@@ -11,7 +11,7 @@ def extract_edges_from_pred(g, source, target, pred):
     edges = []
     c = target
     while c != source and pred[c] != -1:
-        edges.append((c, pred[c]))
+        edges.append((pred[c], c))
         c = pred[c]
     return edges
 
@@ -87,10 +87,11 @@ def build_closure(g, cand_source, terminals, infection_times, k=-1,
     edges = {}
     terminals = list(terminals)
 
-
     # from cand_source to terminals
     vis = init_visitor(g, cand_source)
-    pbfs_search(g, source=cand_source, visitor=vis, terminals=terminals, count_threshold=k)
+    cpbfs_search(g, source=cand_source, visitor=vis, terminals=terminals,
+                 forbidden_nodes=terminals,
+                 count_threshold=k)
     r2pred[cand_source] = vis.pred
     for u, v, c in get_edges(vis.dist, cand_source, terminals):
         edges[(u, v)] = c
