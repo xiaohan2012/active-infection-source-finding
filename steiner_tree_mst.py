@@ -1,5 +1,6 @@
 import networkx as nx
 import numpy as np
+from tqdm import tqdm
 from graph_tool.all import GraphView, pbfs_search, BFSVisitor, Graph
 from graph_tool.search import cpbfs_search
 from utils import gt2nx
@@ -45,33 +46,40 @@ def extract_tree(g, source, pred, terminals=None):
 class MyVisitor(BFSVisitor):
 
     def __init__(self, pred, dist):
+        """np.ndarray"""
         self.pred = pred
         self.dist = dist
 
     def black_target(self, e):
-        s, t = e.source(), e.target()
+        s, t = int(e.source()), int(e.target())
         if self.pred[t] == -1:
             self.pred[t] = s
-            self.dist[e.target()] = self.dist[s] + 1
+            self.dist[t] = self.dist[s] + 1
     
     def tree_edge(self, e):
-        self.pred[e.target()] = int(e.source())
-        self.dist[e.target()] = self.dist[e.source()] + 1
+        s, t = int(e.source()), int(e.target())
+        self.pred[t] = s
+        self.dist[t] = self.dist[s] + 1
 
 
 def init_visitor(g, root):
-    dist = g.new_vertex_property("int")
-    dist.set_2d_array(np.ones(g.num_vertices()) * -1)
+    dist = np.ones(g.num_vertices()) * -1
     dist[root] = 0
-    pred = g.new_vertex_property("int64_t")
-    pred.set_2d_array(np.ones(g.num_vertices()) * -1)
+    pred = np.ones(g.num_vertices()) * -1
     vis = MyVisitor(pred, dist)
     return vis
 
-
+# @profile
+def get_edges(dist, root, terminals):
+    return ((root, t, dist[t])
+            for t in terminals
+            if dist[t] != -1 and t != root)
+    
+# @profile
 def build_closure(g, cand_source, terminals, infection_times, k=-1,
                   strictly_smaller=True,
-                  debug=False):
+                  debug=False,
+                  verbose=False):
     """
     build a clojure graph in which cand_source + terminals are all connected to each other.
     the number of neighbors of each node is determined by k
@@ -81,10 +89,6 @@ def build_closure(g, cand_source, terminals, infection_times, k=-1,
     edges = {}
     terminals = list(terminals)
 
-    def get_edges(dist, root, terminals):
-        return ((root, t, dist[t])
-                for t in terminals
-                if dist[t] != -1 and t != root)
 
     # from cand_source to terminals
     vis = init_visitor(g, cand_source)
@@ -96,8 +100,15 @@ def build_closure(g, cand_source, terminals, infection_times, k=-1,
         print('cand_source: {}'.format(cand_source))
         print('#terminals: {}'.format(len(terminals)))
         print('edges from cand_source: {}'.format(edges))
+    
+    if verbose:
+        terminals_iter = tqdm(terminals)
+        print('building closure graph')
+    else:
+        terminals_iter = terminals
+
     # from terminal to other terminals
-    for root in terminals:
+    for root in terminals_iter:
         vis = init_visitor(g, root)
 
         if strictly_smaller:
@@ -110,16 +121,15 @@ def build_closure(g, cand_source, terminals, infection_times, k=-1,
         if debug:
             print('root: {}'.format(root))
             print('late_terminals: {}'.format(late_terminals))
-        cpbfs_search(g, source=root,
-                     visitor=vis,
-                     terminals=late_terminals,
-                     forbidden_nodes=list(set(terminals) - set(late_terminals)),
-                     count_threshold=k)
+        cpbfs_search(g, source=root, visitor=vis, terminals=late_terminals, forbidden_nodes=list(set(terminals) - set(late_terminals)), count_threshold=k)
         r2pred[root] = vis.pred
         for u, v, c in get_edges(vis.dist, root, late_terminals):
             if debug:
                 print('edge ({}, {})'.format(u, v))
             edges[(u, v)] = c
+
+    if verbose:
+        print('returning closure graph')
 
     gc = Graph(directed=True)
 
@@ -130,24 +140,29 @@ def build_closure(g, cand_source, terminals, infection_times, k=-1,
         gc.add_edge(u, v)
 
     eweight = gc.new_edge_property('int')
-    for e, c in edges.items():
-        eweight[e] = c
+    eweight.set_2d_array(np.array(list(edges.values())))
+    # for e, c in edges.items():
+    #     eweight[e] = c
     return gc, eweight, r2pred
 
-
+# @profile
 def steiner_tree_mst(g, root, infection_times, source, terminals,
                      strictly_smaller=True,
                      return_closure=False,
                      k=-1,
-                     debug=False):
+                     debug=False,
+                     verbose=True):
     gc, eweight, r2pred = build_closure(g, root, terminals,
                                         infection_times,
                                         strictly_smaller=strictly_smaller,
                                         k=k,
-                                        debug=debug)
+                                        debug=debug,
+                                        verbose=verbose)
     
     # get the minimum spanning arborescence
     # graph_tool does not provide minimum_spanning_arborescence
+    if verbose:
+        print('getting mst')
     gx = gt2nx(gc, root, terminals, edge_attrs={'weight': eweight})
     try:
         nx_tree = nx.minimum_spanning_arborescence(gx, 'weight')
@@ -155,7 +170,9 @@ def steiner_tree_mst(g, root, infection_times, source, terminals,
         if debug:
             print('fail to find mst')
         return None
-    
+
+    if verbose:
+        print('returning tree')
     tree_efilt = gc.new_edge_property('bool')
     for u, v in nx_tree.edges():
         tree_efilt[gc.edge(gc.vertex(u), gc.vertex(v))] = True
@@ -169,6 +186,7 @@ def steiner_tree_mst(g, root, infection_times, source, terminals,
     # extract the edges from the original graph
     edges = set()
     for u, v in mst_tree.edges():
+        u, v = int(u), int(v)
         pred = r2pred[u]
         c = v
         while c != u and pred[c] != -1:
