@@ -7,14 +7,12 @@ from utils import gt2nx
 
 
 def extract_edges_from_pred(g, source, target, pred):
-    edges = set()
+    """edges from target to source"""
+    edges = []
     c = target
-    while c != source:
-        if pred[c] != -1:
-            edges.add((pred[c], c))
-            c = pred[c]
-        else:
-            break
+    while c != source and pred[c] != -1:
+        edges.append((c, pred[c]))
+        c = pred[c]
     return edges
 
 
@@ -65,7 +63,7 @@ class MyVisitor(BFSVisitor):
 def init_visitor(g, root):
     dist = np.ones(g.num_vertices()) * -1
     dist[root] = 0
-    pred = np.ones(g.num_vertices()) * -1
+    pred = np.ones(g.num_vertices(), dtype=int) * -1
     vis = MyVisitor(pred, dist)
     return vis
 

@@ -14,6 +14,7 @@ def gen_cascade(g, p, source=None, stop_fraction=0.5, ):
     edges = []
     while np.count_nonzero(infection_times != -1) / g.num_vertices() <= stop_fraction:
         infected_nodes_until_t = copy(infected)
+        time += 1
         for i in infected_nodes_until_t:
             for j in g.vertex(i).all_neighbours():
                 j = int(j)
@@ -21,7 +22,7 @@ def gen_cascade(g, p, source=None, stop_fraction=0.5, ):
                     infected.add(j)
                     infection_times[j] = time
                     edges.append((i, j))
-        time += 1
+
     efilt = g.new_edge_property('bool')
     efilt.a = False
     for u, v in edges:

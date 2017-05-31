@@ -15,4 +15,4 @@ def gen_cascade(g, source=None, fraction=0.5):
         t += 1
     infection_times = np.array(length)
     infection_times[infection_times > t] = -1
-    return source, infection_times
+    return source, infection_times, None

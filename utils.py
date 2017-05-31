@@ -1,8 +1,9 @@
 import numpy as np
 import networkx as nx
+from graph_tool import GraphView
 from collections import Counter
 from functools import reduce
-from graph_tool import GraphView
+
 
 
 # @profile
@@ -24,18 +25,6 @@ def generalized_jaccard_similarity(a, b):
 
     all_elements = set(a.keys()) | set(b.keys())
 
-    # method 0
-    # numer, denom = 0, 0
-    # for e in all_elements:
-    #     x, y = a.get(e, 0), b.get(e, 0)
-    #     if x < y:
-    #         numer += x
-    #         denom += y
-    #     else:
-    #         numer += y
-    #         denom += x
-
-    # method 1
     numer, denom = reduce(lambda v, tpl: (v[0] + tpl[0], v[1] + tpl[1]),
                           ((b.get(e, 0), a.get(e, 0))
                            if a.get(e, 0) > b.get(e, 0)
@@ -43,11 +32,6 @@ def generalized_jaccard_similarity(a, b):
                            for e in all_elements),
                           (0, 0))
     
-    # method 2
-    # sorted_count = np.sort(counts, axis=1, kind='heapsort')
-    # numer, denom = sorted_count.sum(axis=0)
-    # numer = np.sum(np.min(counts, axis=1))
-    # denom = np.sum(np.max(counts, axis=1))
     return numer / denom
 
 
@@ -152,3 +136,6 @@ def edges2graph(g, edges):
         efilt[get_edge(g, u, v)] = True
     return GraphView(g, directed=True, efilt=efilt)
 
+
+def earliest_obs_node(obs_nodes, infection_times):
+    return min(obs_nodes, key=infection_times.__getitem__)
