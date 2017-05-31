@@ -3,7 +3,7 @@ from graph_tool.all import GraphView, shortest_path, shortest_distance
 from collections import defaultdict
 from utils import extract_edges
 
-# DEPRECATED
+
 def temporal_bfs(g, r, D, infection_times, source, obs_nodes, debug=False):
     """return the tree covering obs_nodes"""
     queue = [r]
@@ -30,7 +30,7 @@ def temporal_bfs(g, r, D, infection_times, source, obs_nodes, debug=False):
                     print('t_l[u]={}, t_l[v]={}'.format(t_lower[u], t_lower[v]))
                 visitable = False
 
-                if t_lower[u] > t_lower[v]:
+                if t_lower[u] >= t_lower[v]:
                     if debug:
                         print('first case')
                     visitable = True

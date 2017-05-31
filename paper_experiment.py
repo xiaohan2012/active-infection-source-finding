@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import time
 import pickle as pkl
+from graph_tool import GraphView
 from sklearn.metrics import matthews_corrcoef, precision_score, recall_score
 from tqdm import tqdm
 from cascade import gen_nontrivial_cascade
@@ -19,6 +20,11 @@ def get_tree(g, infection_times, source, obs_nodes, method, verbose=False, debug
         k = (int(len(obs_nodes) * 0.5) or 1)
         # print(k)
         tree = steiner_tree_mst(g, root, infection_times, source, obs_nodes, debug=debug, k=k)
+    elif method == 'greedy':
+        from steiner_tree_greedy import steiner_tree_greedy
+        tree = steiner_tree_greedy(g, root, infection_times, source, obs_nodes,
+                                   debug=debug,
+                                   verbose=verbose)
     elif method == 'tbfs':
         from steiner_tree_order import temporal_bfs
         tree = temporal_bfs(g, root, infection_times[root], infection_times, source, obs_nodes,
@@ -59,6 +65,11 @@ def run_k_rounds(g, p, q, model, method, k=100, verbose=False, debug=False):
 
 
 def evaluate_performance(g, tree, obs_nodes, infection_times):
+    tree = GraphView(tree)
+    vfilt = tree.new_vertex_property('bool')
+    vfilt.a = True
+    tree.set_vertex_filter(vfilt)
+    
     inferred_labels = np.zeros(g.num_vertices())
     true_labels = (infection_times != -1)
     for e in list(tree.edges()):
