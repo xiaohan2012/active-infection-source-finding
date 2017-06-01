@@ -5,6 +5,7 @@ from graph_tool.all import load_graph
 from steiner_tree_greedy import steiner_tree_greedy
 from steiner_tree_mst import steiner_tree_mst, build_closure
 from mst_truncated import build_truncated_closure
+from temporal_bfs import temporal_bfs
 from utils import earliest_obs_node
 from feasibility import is_feasible
 from cascade import gen_nontrivial_cascade
@@ -70,4 +71,14 @@ def test_mst_truncated(cascades_on_tree):
         )
         assert is_feasible(tree, root, obs_nodes, infection_times)
 
-        
+
+def test_mst_temporal_bfs(cascades_on_tree):
+    for g, infection_times, source, obs_nodes, true_tree, model, q, i in cascades_on_tree:
+        print(model, q, i)
+        root = earliest_obs_node(obs_nodes, infection_times)
+        tree = temporal_bfs(
+            g, root, infection_times, source, obs_nodes,
+            debug=False,
+            verbose=False,
+        )
+        assert is_feasible(tree, root, obs_nodes, infection_times)

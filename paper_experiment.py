@@ -31,9 +31,10 @@ def get_tree(g, infection_times, source, obs_nodes, method, verbose=False, debug
                                    debug=debug,
                                    verbose=verbose)
     elif method == 'tbfs':
-        from steiner_tree_order import temporal_bfs
-        tree = temporal_bfs(g, root, infection_times[root], infection_times, source, obs_nodes,
-                            debug=debug)
+        from temporal_bfs import temporal_bfs
+        tree = temporal_bfs(g, root, infection_times, source, obs_nodes,
+                            debug=debug,
+                            verbose=verbose)
     return tree
 
 
