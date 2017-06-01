@@ -149,7 +149,7 @@ def build_closure(g, cand_source, terminals, infection_times, k=-1,
     #     eweight[e] = c
     return gc, eweight, r2pred
 
-
+# @profile
 def steiner_tree_mst(g, root, infection_times, source, terminals,
                      closure_builder=build_closure,
                      strictly_smaller=True,

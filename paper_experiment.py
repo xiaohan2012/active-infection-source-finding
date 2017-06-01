@@ -12,15 +12,18 @@ from utils import earliest_obs_node
 def get_tree(g, infection_times, source, obs_nodes, method, verbose=False, debug=False):
     root = earliest_obs_node(obs_nodes, infection_times)
     if method == 'mst':
-        from steiner_tree_mst import steiner_tree_mst
+        from steiner_tree_mst import steiner_tree_mst, build_closure
         tree = steiner_tree_mst(g, root, infection_times, source, obs_nodes, debug=debug,
+                                closure_builder=build_closure,
                                 strictly_smaller=False,
                                 verbose=verbose)
-    elif method == 'mst-k':
+    elif method == 'truncated_mst':
         from steiner_tree_mst import steiner_tree_mst
-        k = (int(len(obs_nodes) * 0.5) or 1)
-        # print(k)
-        tree = steiner_tree_mst(g, root, infection_times, source, obs_nodes, debug=debug, k=k)
+        from mst_truncated import build_truncated_closure
+        tree = steiner_tree_mst(g, root, infection_times, source, obs_nodes,
+                                closure_builder=build_truncated_closure,
+                                k=1,  # that's the difference
+                                debug=debug)
     elif method == 'greedy':
         from steiner_tree_greedy import steiner_tree_greedy
         tree = steiner_tree_greedy(g, root, infection_times, source, obs_nodes,
