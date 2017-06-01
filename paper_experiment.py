@@ -23,6 +23,7 @@ def get_tree(g, infection_times, source, obs_nodes, method, verbose=False, debug
         tree = steiner_tree_mst(g, root, infection_times, source, obs_nodes,
                                 closure_builder=build_truncated_closure,
                                 k=1,  # that's the difference
+                                verbose=verbose,
                                 debug=debug)
     elif method == 'greedy':
         from steiner_tree_greedy import steiner_tree_greedy
