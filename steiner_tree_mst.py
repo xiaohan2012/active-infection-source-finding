@@ -89,6 +89,7 @@ def build_closure(g, cand_source, terminals, infection_times, k=-1,
 
     # from cand_source to terminals
     vis = init_visitor(g, cand_source)
+
     cpbfs_search(g, source=cand_source, visitor=vis, terminals=terminals,
                  forbidden_nodes=terminals,
                  count_threshold=k)
@@ -148,34 +149,35 @@ def build_closure(g, cand_source, terminals, infection_times, k=-1,
     #     eweight[e] = c
     return gc, eweight, r2pred
 
-# @profile
+
 def steiner_tree_mst(g, root, infection_times, source, terminals,
+                     closure_builder=build_closure,
                      strictly_smaller=True,
                      return_closure=False,
                      k=-1,
                      debug=False,
                      verbose=True):
-    gc, eweight, r2pred = build_closure(g, root, terminals,
-                                        infection_times,
-                                        strictly_smaller=strictly_smaller,
-                                        k=k,
-                                        debug=debug,
-                                        verbose=verbose)
+    gc, eweight, r2pred = closure_builder(g, root, terminals,
+                                          infection_times,
+                                          strictly_smaller=strictly_smaller,
+                                          k=k,
+                                          debug=debug,
+                                          verbose=verbose)
 
     # get the minimum spanning arborescence
     # graph_tool does not provide minimum_spanning_arborescence
     if verbose:
         print('getting mst')
     gx = gt2nx(gc, root, terminals, edge_attrs={'weight': eweight})
-#     print('type', type(gx))
-#     print('gx.edges()', gx.edges())
     try:
         nx_tree = nx.minimum_spanning_arborescence(gx, 'weight')
-#         print('nx_tree.edges()', nx_tree.edges())
     except nx.exception.NetworkXException:
         if debug:
             print('fail to find mst')
-        return None
+        if return_closure:
+            return None, gc, None
+        else:
+            return None
 
     if verbose:
         print('returning tree')
@@ -183,15 +185,15 @@ def steiner_tree_mst(g, root, infection_times, source, terminals,
     mst_tree = Graph(directed=True)
     for _ in range(g.num_vertices()):
         mst_tree.add_vertex()
-    
+
     for u, v in nx_tree.edges():
         mst_tree.add_edge(u, v)
 
     if verbose:
         print('extract edges from original graph')
 
-    # extract the edges from the original graph   
-    
+    # extract the edges from the original graph
+
     # sort observations by time
     # and also topological order
     topological_index = {}
@@ -200,26 +202,30 @@ def steiner_tree_mst(g, root, infection_times, source, terminals,
     sorted_obs = sorted(
         set(terminals) - {root},
         key=lambda o: (infection_times[o], topological_index[o]))
-        
+
     tree_nodes = {root}
     tree_edges = set()
     # print('root', root)
     for u in sorted_obs:
+        if u in tree_nodes:
+            if debug:
+                print('{} covered already'.format(u))
+            continue
         # print(u)
         v, u = map(int, next(mst_tree.vertex(u).in_edges()))  # v is ancestor
         tree_nodes.add(v)
-        
+
         late_nodes = [n for n in terminals if infection_times[n] > infection_times[u]]
         vis = init_visitor(g, u)
         # from child to any tree node, including v
-        
+
         cpbfs_search(g, source=u, terminals=list(tree_nodes),
                      forbidden_nodes=late_nodes,
                      visitor=vis,
                      count_threshold=1)
         reachable_tree_nodes = set(np.nonzero(vis.dist > 0)[0]).intersection(tree_nodes)
         ancestor = min(reachable_tree_nodes, key=vis.dist.__getitem__)
-        
+
         edges = extract_edges_from_pred(g, u, ancestor, vis.pred)
         edges = {(j, i) for i, j in edges}  # need to reverse it
         if debug:
