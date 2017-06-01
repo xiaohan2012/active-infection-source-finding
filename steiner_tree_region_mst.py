@@ -98,7 +98,7 @@ def build_region_closure(g, root, regions, infection_times, obs_nodes, debug=Fal
                      visitor=visitor,
                      count_threshold=1)
     
-        reachable_targets = [t for t in targets if visitor.dist.a[t] > 0]
+        reachable_targets = [t for t in targets if visitor.dist[t] > 0]
 
         if debug:
             print('reachable_targets: {}'.format(reachable_targets))
@@ -107,8 +107,8 @@ def build_region_closure(g, root, regions, infection_times, obs_nodes, debug=Fal
             # cannot reach there
             continue
 
-        source = min(reachable_targets, key=visitor.dist.a.__getitem__)
-        dist = visitor.dist.a[source]
+        source = min(reachable_targets, key=visitor.dist.__getitem__)
+        dist = visitor.dist[source]
 
         assert dist > 0
 

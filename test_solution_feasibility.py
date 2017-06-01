@@ -3,6 +3,7 @@ import pytest
 from graph_tool.all import load_graph
 
 from steiner_tree_greedy import steiner_tree_greedy
+from steiner_tree_mst import steiner_tree_mst
 from utils import earliest_obs_node
 from feasibility import is_feasible
 from cascade import gen_nontrivial_cascade
@@ -37,6 +38,19 @@ def test_greedy(cascades_on_tree):
             g, root, infection_times, source, obs_nodes,
             debug=False,
             verbose=True
+        )
+        assert is_feasible(tree, root, obs_nodes, infection_times)
+
+
+def test_mst(cascades_on_tree):
+    for g, infection_times, source, obs_nodes, true_tree, model, q, i in cascades_on_tree:
+        print(model, q, i)
+        root = earliest_obs_node(obs_nodes, infection_times)
+        tree = steiner_tree_mst(
+            g, root, infection_times, source, obs_nodes,
+            strictly_smaller=False,
+            debug=False,
+            verbose=False,
         )
         assert is_feasible(tree, root, obs_nodes, infection_times)
 

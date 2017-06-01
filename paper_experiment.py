@@ -6,10 +6,11 @@ from graph_tool import GraphView
 from sklearn.metrics import matthews_corrcoef, precision_score, recall_score
 from tqdm import tqdm
 from cascade import gen_nontrivial_cascade
+from utils import earliest_obs_node
 
 
 def get_tree(g, infection_times, source, obs_nodes, method, verbose=False, debug=False):
-    root = min(obs_nodes, key=infection_times.__getitem__)
+    root = earliest_obs_node(obs_nodes, infection_times)
     if method == 'mst':
         from steiner_tree_mst import steiner_tree_mst
         tree = steiner_tree_mst(g, root, infection_times, source, obs_nodes, debug=debug,

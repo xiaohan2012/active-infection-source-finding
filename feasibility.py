@@ -49,7 +49,7 @@ def is_feasible(tree, root, obs_nodes, infection_times):
         return False
     for o in obs_nodes:
         try:
-            tree.vertex(o)        
+            tree.vertex(o)
         except ValueError:
             print('does not span {}'.format(o))
             return False

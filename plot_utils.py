@@ -17,6 +17,7 @@ def plot_snapshot(g, pos,
                   source_node=None,
                   max_node_size=1000,
                   with_labels=False,
+                  arrows=False,
                   edges=None):
     if is_infection_time:
         node2weight = infeciton_time2weight(node2weight)
@@ -70,10 +71,11 @@ def plot_snapshot(g, pos,
                                 labels={n: str(n) for n in g.nodes()},
                                 font_size=10,
                                 ax=ax)
+    kwargs = {"arrows": arrows}
     if edges:
-        nx.draw_networkx_edges(g, pos=pos, ax=ax, edgelist=edges)
+        nx.draw_networkx_edges(g, pos=pos, ax=ax, edgelist=edges, **kwargs)
     else:
-        nx.draw_networkx_edges(g, pos=pos, ax=ax)
+        nx.draw_networkx_edges(g, pos=pos, ax=ax, **kwargs)
 
 
 def add_colorbar(cvalues, cmap='OrRd', ax=None):
