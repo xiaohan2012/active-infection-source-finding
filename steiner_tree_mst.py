@@ -73,7 +73,7 @@ def get_edges(dist, root, terminals):
             for t in terminals
             if dist[t] != -1 and t != root)
     
-
+# @profile
 def build_closure(g, cand_source, terminals, infection_times, k=-1,
                   strictly_smaller=True,
                   debug=False,
@@ -148,6 +148,7 @@ def build_closure(g, cand_source, terminals, infection_times, k=-1,
     #     eweight[e] = c
     return gc, eweight, r2pred
 
+# @profile
 def steiner_tree_mst(g, root, infection_times, source, terminals,
                      strictly_smaller=True,
                      return_closure=False,
