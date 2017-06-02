@@ -4,6 +4,8 @@ from graph_tool.all import load_graph
 
 from steiner_tree_greedy import steiner_tree_greedy
 from steiner_tree_mst import steiner_tree_mst, build_closure
+from steiner_tree import get_steiner_tree
+
 from mst_truncated import build_truncated_closure
 from temporal_bfs import temporal_bfs
 from utils import earliest_obs_node
@@ -82,3 +84,17 @@ def test_mst_temporal_bfs(cascades_on_tree):
             verbose=False,
         )
         assert is_feasible(tree, root, obs_nodes, infection_times)
+
+
+def test_vanilla_steiner_tree(cascades_on_tree):
+    for g, infection_times, source, obs_nodes, true_tree, model, q, i in cascades_on_tree:
+        print(model, q, i)
+        pred_tree = get_steiner_tree(
+            g, obs_nodes,
+            debug=False,
+            verbose=False,
+        )
+    assert np.all(np.array([v.out_degree() for v in pred_tree.vertices()]) > 0)
+    assert np.sum([v.out_degree() for v in pred_tree.vertices()]) == (pred_tree.num_vertices() - 1) * 2
+    for o in obs_nodes:
+        pred_tree.vertex(o)        

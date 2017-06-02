@@ -170,11 +170,11 @@ def earliest_obs_node(obs_nodes, infection_times):
     return min(obs_nodes, key=infection_times.__getitem__)
 
 
-def build_minimum_tree(g, root, terminals, edges):
+def build_minimum_tree(g, root, terminals, edges, directed=True):
     """remove redundant edges from `edges` so that root can reach each node in terminals
     """
     # build the tree
-    t = Graph(directed=True)
+    t = Graph(directed=directed)
 
     for _ in range(g.num_vertices()):
         t.add_vertex()
