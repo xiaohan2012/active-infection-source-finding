@@ -69,7 +69,7 @@ def temporal_bfs_old(g, root, infection_times, source, terminals,
     
     return t
 
-@profile
+# @profile
 def temporal_bfs(g, root, infection_times, source, terminals,
                  debug=False,
                  verbose=True):
