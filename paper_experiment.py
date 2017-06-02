@@ -30,6 +30,13 @@ def get_tree(g, infection_times, source, obs_nodes, method, verbose=False, debug
         tree = steiner_tree_greedy(g, root, infection_times, source, obs_nodes,
                                    debug=debug,
                                    verbose=verbose)
+    elif method == 'no-order':
+        from steiner_tree import get_steiner_tree
+        tree = get_steiner_tree(
+            g, obs_nodes,
+            debug=False,
+            verbose=False,
+        )
     elif method == 'tbfs':
         from temporal_bfs import temporal_bfs
         tree = temporal_bfs(g, root, infection_times, source, obs_nodes,

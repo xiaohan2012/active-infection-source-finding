@@ -2,7 +2,7 @@
 	 # -g grid --param '2-6' \
 kernprof -l  paper_experiment.py \
 	   -g p2p-gnutella08 --param "" \
-	   -m tbfs  \
+	   -m no-order  \
 	   -l si \
 	   -p 0.5 \
 	   -q 0.01 \

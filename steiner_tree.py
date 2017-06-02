@@ -6,7 +6,7 @@ from utils import init_visitor, extract_edges_from_pred
 from graph_tool.topology import min_spanning_tree
 from utils import extract_edges_from_pred
 
-
+# @profile
 def build_closure(g, terminals,
                   debug=False,
                   verbose=False):
@@ -45,7 +45,7 @@ def build_closure(g, terminals,
     gc.set_vertex_filter(vfilt)
     return gc, eweight, r2pred
 
-
+# @profile
 def get_steiner_tree(g, obs_nodes, debug=False, verbose=False):
     gc, eweight, r2pred = build_closure(g, obs_nodes,
                                         debug=debug, verbose=verbose)
