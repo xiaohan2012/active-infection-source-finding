@@ -1,11 +1,14 @@
-from graph_tool import Graph
-from steiner_tree_mst import init_visitor, extract_edges_from_pred
-from graph_tool.search import pbfs_search
+from collections import Counter
 
-# @profile
-def temporal_bfs(g, root, infection_times, source, terminals,
-                 debug=False,
-                 verbose=True):
+from graph_tool import Graph
+from graph_tool.search import pbfs_search
+from steiner_tree_mst import init_visitor, extract_edges_from_pred
+from utils import build_minimum_tree
+
+
+def temporal_bfs_old(g, root, infection_times, source, terminals,
+                     debug=False,
+                     verbose=True):
     terminals = set(terminals)
     visited = {root}
     edges = []
@@ -65,3 +68,59 @@ def temporal_bfs(g, root, infection_times, source, terminals,
         t.set_vertex_filter(vfilt)
     
     return t
+
+@profile
+def temporal_bfs(g, root, infection_times, source, terminals,
+                 debug=False,
+                 verbose=True):
+    terminals = set(terminals)
+    visited = {root}
+    edges = []
+
+    processed_by_time = Counter()
+    for v in terminals:
+        processed_by_time[infection_times[v]] += 1
+
+    terminals_sorted = list(sorted(
+        terminals,
+        key=lambda t: (infection_times[t], (t not in visited))))
+
+    all_times_sorted = list(sorted(map(infection_times.__getitem__, terminals)))
+    tmin = infection_times[root]
+    tmin_idx = 0
+    processed_by_time[tmin] -= 1
+
+    # update tmin
+    if processed_by_time[tmin] == 0:
+        tmin_idx += 1
+        tmin = all_times_sorted[tmin_idx]
+
+    queue = [root]
+    delayed = set()
+    while len(queue) > 0:
+        u = queue.pop(0)
+        for v in g.vertex(u).all_neighbours():
+            v = int(v)
+            if v not in visited:
+                edges.append((u, v))
+                visited.add(v)
+                if v in terminals:
+                    delayed.add(v)
+                    processed_by_time[infection_times[v]] -= 1
+                else:
+                    queue.append(v)
+        # update tmin
+        while processed_by_time[tmin] == 0 and tmin_idx < len(all_times_sorted)-1:
+            tmin_idx += 1
+            tmin = all_times_sorted[tmin_idx]
+
+        # re-enqueue delayed terminal nodes
+        for v in terminals_sorted:
+            if v in delayed:
+                if infection_times[v] > tmin:
+                    break
+                else:
+                    delayed.remove(v)
+                    queue.append(v)
+    
+    return build_minimum_tree(g, root, terminals, edges)

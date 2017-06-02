@@ -1,42 +1,71 @@
 import numpy as np
 import networkx as nx
-from graph_tool import GraphView
+from graph_tool import GraphView, Graph
+from graph_tool.search import pbfs_search
 from collections import Counter
-from functools import reduce
+from graph_tool.all import BFSVisitor
 
 
+def extract_edges_from_pred(g, source, target, pred):
+    """edges from target to source"""
+    edges = []
+    c = target
+    while c != source and pred[c] != -1:
+        edges.append((pred[c], c))
+        c = pred[c]
+    return edges
 
-# @profile
-def generalized_jaccard_similarity(a, b):
-    """a and b should be list
-    >>> a = [1, 1, 2]
-    >>> b = [1, 2, 3]
-    >>> generalized_jaccard_similarity(a, b)
-    0.5
-    >>> generalized_jaccard_similarity(a, a)
-    1.0
-    """
-    # a, b = map(list, [a, b])
-    if not isinstance(a, Counter):
-        a = Counter(a)
 
-    if not isinstance(b, Counter):
-        b = Counter(b)
+def extract_tree(g, source, pred, terminals=None):
+    """return a tree from source to terminals based on `pred`"""
+    edges = set()
 
-    all_elements = set(a.keys()) | set(b.keys())
+    if terminals:
+        visited = set()
+        for t in sorted(terminals):
+            c = t
+            while c != source and c not in visited:
+                visited.add(c)
+                if pred[c] != -1:
+                    edges.add((pred[c], c))
+                    c = pred[c]
+                else:
+                    break
+    else:
+        for c, p in enumerate(pred.a):
+            if p != -1:
+                edges.add((c, p))
+    efilt = g.new_edge_property('bool')
+    for u, v in edges:
+        efilt[g.edge(g.vertex(u), g.vertex(v))] = 1
+    return GraphView(g, efilt=efilt)
 
-    numer, denom = reduce(lambda v, tpl: (v[0] + tpl[0], v[1] + tpl[1]),
-                          ((b.get(e, 0), a.get(e, 0))
-                           if a.get(e, 0) > b.get(e, 0)
-                           else (a.get(e, 0), b.get(e, 0))
-                           for e in all_elements),
-                          (0, 0))
+
+class MyVisitor(BFSVisitor):
+
+    def __init__(self, pred, dist):
+        """np.ndarray"""
+        self.pred = pred
+        self.dist = dist
+
+    def black_target(self, e):
+        s, t = int(e.source()), int(e.target())
+        if self.pred[t] == -1:
+            self.pred[t] = s
+            self.dist[t] = self.dist[s] + 1
     
-    return numer / denom
+    def tree_edge(self, e):
+        s, t = int(e.source()), int(e.target())
+        self.pred[t] = s
+        self.dist[t] = self.dist[s] + 1
 
 
-def generalized_jaccard_distance(a, b):
-    return 1 - generalized_jaccard_similarity(a, b)
+def init_visitor(g, root):
+    dist = np.ones(g.num_vertices()) * -1
+    dist[root] = 0
+    pred = np.ones(g.num_vertices(), dtype=int) * -1
+    vis = MyVisitor(pred, dist)
+    return vis
 
 
 # @profile
@@ -139,3 +168,38 @@ def edges2graph(g, edges):
 
 def earliest_obs_node(obs_nodes, infection_times):
     return min(obs_nodes, key=infection_times.__getitem__)
+
+
+def build_minimum_tree(g, root, terminals, edges):
+    """remove redundant edges from `edges` so that root can reach each node in terminals
+    """
+    # build the tree
+    t = Graph(directed=True)
+
+    for _ in range(g.num_vertices()):
+        t.add_vertex()
+
+    for (u, v) in edges:
+        t.add_edge(u, v)
+
+    # mask out redundant edges
+    vis = init_visitor(t, root)
+    pbfs_search(t, source=root, terminals=list(terminals), visitor=vis)
+
+    minimum_edges = {e
+                     for u in terminals
+                     for e in extract_edges_from_pred(t, root, u, vis.pred)}
+    # print(minimum_edges)
+    efilt = t.new_edge_property('bool')
+    efilt.a = False
+    for u, v in minimum_edges:
+        efilt[u, v] = True
+    t.set_edge_filter(efilt)
+
+    vfilt = t.new_vertex_property('bool')
+    vfilt.a = False
+    tree_nodes = {u for e in minimum_edges for u in e}
+    for v in tree_nodes:
+        vfilt[v] = True
+    t.set_vertex_filter(vfilt)
+    return t
