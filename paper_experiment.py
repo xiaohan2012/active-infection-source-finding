@@ -1,12 +1,11 @@
-import numpy as np
 import pandas as pd
 import time
 import pickle as pkl
-from graph_tool import GraphView
-from sklearn.metrics import matthews_corrcoef, precision_score, recall_score
 from tqdm import tqdm
+
 from cascade import gen_nontrivial_cascade
 from utils import earliest_obs_node
+from evaluate import evaluate_performance
 
 
 def get_tree(g, infection_times, source, obs_nodes, method, verbose=False, debug=False):
@@ -45,7 +44,10 @@ def get_tree(g, infection_times, source, obs_nodes, method, verbose=False, debug
     return tree
 
 
-def run_k_rounds(g, p, q, model, method, k=100, verbose=False, debug=False):
+def run_k_rounds(g, p, q, model, method,
+                 result_dir,
+                 k=100,
+                 verbose=False, debug=False):
     rows = []
     iters = range(k)
     if verbose:
@@ -55,13 +57,20 @@ def run_k_rounds(g, p, q, model, method, k=100, verbose=False, debug=False):
         if verbose:
             print('{}th simulation'.format(i))
             print('gen cascade')
-        infection_times, source, obs_nodes = gen_nontrivial_cascade(
+        infection_times, source, obs_nodes, true_tree = gen_nontrivial_cascade(
             g, p, q, model=model,
-            return_tree=False, source_includable=True)
+            return_tree=True, source_includable=True)
         stime = time.time()
         tree = get_tree(g, infection_times, source, obs_nodes, method,
                         verbose=verbose,
                         debug=debug)
+
+        # pickle cascade and pred_tree
+        true_edges = [(int(u), int(v)) for u, v in true_tree.edges()]
+        pred_edges = [(int(u), int(v)) for u, v in tree.edges()]
+        pkl.dump((infection_times, source, obs_nodes, true_edges, pred_edges),
+                 open(result_dir + '/{}.pkl'.format(i), 'wb'))
+        
         if tree:
             scores = evaluate_performance(g, tree, obs_nodes, infection_times)
             scores += (time.time() - stime, )
@@ -75,31 +84,6 @@ def run_k_rounds(g, p, q, model, method, k=100, verbose=False, debug=False):
 
     df = pd.DataFrame(rows, columns=['mmc', 'prec', 'rec', 'obj', 'time'])
     return df.describe()
-
-
-def evaluate_performance(g, tree, obs_nodes, infection_times):
-    tree = GraphView(tree)
-    vfilt = tree.new_vertex_property('bool')
-    vfilt.a = True
-    tree.set_vertex_filter(vfilt)
-    
-    inferred_labels = np.zeros(g.num_vertices())
-    true_labels = (infection_times != -1)
-    for e in list(tree.edges()):
-        u, v = map(int, e)
-        inferred_labels[u] = 1
-        inferred_labels[v] = 1
-    
-    idx = np.sort(list(set(np.arange(g.num_vertices())) - set(obs_nodes)))
-    
-    true_labels = true_labels[idx]
-    inferred_labels = inferred_labels[idx]
-    
-    mmc = matthews_corrcoef(true_labels, inferred_labels)
-    prec = precision_score(true_labels, inferred_labels)
-    rec = recall_score(true_labels, inferred_labels)
-    obj = tree.num_edges()
-    return (mmc, prec, rec, obj)
 
 
 if __name__ == '__main__':
@@ -137,14 +121,19 @@ k: {}
 method: {}""".format(gtype, model, p, q, k, method))
 
     g = load_graph('data/{}/{}/graph.gt'.format(gtype, param))
-    
-    stat = run_k_rounds(g, p, q, model, method, k=k,
+
+    dirname = os.path.dirname(output_path)
+
+    result_dir = os.path.join(dirname, "{}".format(q))
+    if not os.path.exists(result_dir):
+        os.makedirs(result_dir)
+        
+    stat = run_k_rounds(g, p, q, model, method,
+                        result_dir=result_dir,
+                        k=k,
                         verbose=args.verbose,
                         debug=args.debug)
 
     print('write result to {}'.format(output_path))
 
-    dirname = os.path.dirname(output_path)
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
     stat.to_pickle(output_path)

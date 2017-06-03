@@ -1,18 +1,22 @@
 """infection model following shortest path"""
 
 import numpy as np
-import random
-from graph_tool.all import shortest_distance
+from ic import simulate_cascade
 
 
 def gen_cascade(g, source=None, fraction=0.5):
-    if source is None:
-        source = random.choice(np.arange(g.num_vertices()))
+    source, infection_times, tree = simulate_cascade(
+        g, 1.0, source=source, return_tree=True)
 
-    length = shortest_distance(g, source=source).a
     t = 1
-    while (np.count_nonzero(length <= t) / g.num_vertices()) <= fraction:
+    while (np.count_nonzero(infection_times <= t) / g.num_vertices()) <= fraction:
         t += 1
-    infection_times = np.array(length)
     infection_times[infection_times > t] = -1
-    return source, infection_times, None
+
+    filtered_nodes = np.nonzero(infection_times == -1)[0]
+    vfilt = tree.new_vertex_property('bool')
+    vfilt.a = True
+    for n in filtered_nodes:
+        vfilt[n] = False
+    tree.set_vertex_filter(vfilt)
+    return source, infection_times, tree
