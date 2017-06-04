@@ -4,7 +4,7 @@ from copy import copy
 from graph_tool import GraphView
 
 
-def gen_cascade(g, p, source=None, stop_fraction=0.5, ):
+def gen_cascade(g, p, source=None, stop_fraction=0.5):
     if source is None:
         source = random.choice(np.arange(g.num_vertices()))
     infected = {source}
