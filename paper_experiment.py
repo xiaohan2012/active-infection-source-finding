@@ -8,6 +8,9 @@ from utils import earliest_obs_node
 from evaluate import evaluate_performance
 
 
+DUMP_PERFORMANCE = False
+
+
 def get_tree(g, infection_times, source, obs_nodes, method, verbose=False, debug=False):
     root = earliest_obs_node(obs_nodes, infection_times)
     if method == 'mst':
@@ -70,20 +73,21 @@ def run_k_rounds(g, p, q, model, method,
         pred_edges = [(int(u), int(v)) for u, v in tree.edges()]
         pkl.dump((infection_times, source, obs_nodes, true_edges, pred_edges),
                  open(result_dir + '/{}.pkl'.format(i), 'wb'))
-        
-        if tree:
-            scores = evaluate_performance(g, tree, obs_nodes, infection_times)
-            scores += (time.time() - stime, )
-            rows.append(scores)
-        else:
-            if debug:
-                print('fail to get tree')
-                print('writing bad example')
-                pkl.dump((g, infection_times, source, obs_nodes),
-                         open('bad_examples/1.pkl', 'wb'))
 
-    df = pd.DataFrame(rows, columns=['mmc', 'prec', 'rec', 'obj', 'time'])
-    return df.describe()
+        if DUMP_PERFORMANCE:
+            if tree:
+                scores = evaluate_performance(g, tree, obs_nodes, infection_times)
+                scores += (time.time() - stime, )
+                rows.append(scores)
+            else:
+                if debug:
+                    print('fail to get tree')
+                    print('writing bad example')
+                    pkl.dump((g, infection_times, source, obs_nodes),
+                             open('bad_examples/1.pkl', 'wb'))
+
+            df = pd.DataFrame(rows, columns=['mmc', 'prec', 'rec', 'obj', 'time'])
+            return df.describe()
 
 
 if __name__ == '__main__':
@@ -134,6 +138,9 @@ method: {}""".format(gtype, model, p, q, k, method))
                         verbose=args.verbose,
                         debug=args.debug)
 
-    print('write result to {}'.format(output_path))
+    if DUMP_PERFORMANCE:
+        print('write result to {}'.format(output_path))
 
-    stat.to_pickle(output_path)
+        stat.to_pickle(output_path)
+    else:
+        print('done')
