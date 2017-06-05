@@ -34,7 +34,7 @@ def build_closure(g, terminals,
     for u, v, c in edges_with_weight:
         gc.add_edge(u, v)
         
-    eweight = gc.new_edge_property('int')    
+    eweight = gc.new_edge_property('int')
     weights = np.array([c for _, _, c in edges_with_weight])
     eweight.set_2d_array(weights)
 
@@ -45,8 +45,9 @@ def build_closure(g, terminals,
     gc.set_vertex_filter(vfilt)
     return gc, eweight, r2pred
 
+
 # @profile
-def get_steiner_tree(g, obs_nodes, debug=False, verbose=False):
+def get_steiner_tree(g, root, obs_nodes, debug=False, verbose=False):
     gc, eweight, r2pred = build_closure(g, obs_nodes,
                                         debug=debug, verbose=verbose)
 

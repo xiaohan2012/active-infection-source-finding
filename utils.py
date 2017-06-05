@@ -3,7 +3,15 @@ import networkx as nx
 from graph_tool import GraphView, Graph
 from graph_tool.search import pbfs_search
 from collections import Counter
-from graph_tool.all import BFSVisitor
+from graph_tool.all import BFSVisitor, shortest_distance, shortest_path
+
+MAXINT = np.iinfo(np.int32).max
+
+
+def get_infection_time(g, source):
+    time = shortest_distance(g, source=source).a
+    time[time == MAXINT] = -1
+    return time
 
 
 def extract_edges_from_pred(g, source, target, pred):
@@ -157,13 +165,12 @@ def gt2nx(g, root, terminals, node_attrs=None, edge_attrs=None):
 
 
 def edges2graph(g, edges):
-    def get_edge(g, u, v):
-        return g.edge(g.vertex(u), g.vertex(v))
-    efilt = g.new_edge_property('bool')
-    efilt.a = False
+    tree = Graph(directed=True)
+    for _ in range(g.num_vertices()):
+        tree.add_vertex()
     for u, v in edges:
-        efilt[get_edge(g, u, v)] = True
-    return GraphView(g, directed=True, efilt=efilt)
+        tree.add_edge(int(u), int(v))
+    return tree
 
 
 def earliest_obs_node(obs_nodes, infection_times):
@@ -203,3 +210,29 @@ def build_minimum_tree(g, root, terminals, edges, directed=True):
         vfilt[v] = True
     t.set_vertex_filter(vfilt)
     return t
+
+
+def to_directed(g, t, root):
+    new_t = Graph(directed=True)
+    all_edges = set()
+    for target in t.vertices():
+        path = shortest_path(t, source=root, target=t.vertex(target))[0]
+        edges = set(zip(path[:-1], path[1:]))
+        all_edges |= edges
+
+    for _ in range(g.num_vertices()):
+        new_t.add_vertex()
+    for u, v in all_edges:
+        new_t.add_edge(int(u), int(v))
+    return new_t
+
+
+def get_leaves(t):
+    # print([(int(v), v.out_degree(), v.in_degree()) for v in t.vertices()])
+    return [v for v in t.vertices()
+            if v.out_degree() == 0 and v.in_degree() > 0]
+
+
+def get_paths(t, source, terminals):
+    return [list(map(int, shortest_path(t, source=source, target=t.vertex(int(n)))[0]))
+            for n in terminals]

@@ -1,7 +1,7 @@
 import random
 import numpy as np
 from copy import copy
-from graph_tool import GraphView
+from graph_tool import Graph
 
 
 def gen_cascade(g, p, source=None, stop_fraction=0.5):
@@ -23,9 +23,9 @@ def gen_cascade(g, p, source=None, stop_fraction=0.5):
                     infection_times[j] = time
                     edges.append((i, j))
 
-    efilt = g.new_edge_property('bool')
-    efilt.a = False
+    tree = Graph(directed=True)
+    for _ in range(g.num_vertices()):
+        tree.add_vertex()
     for u, v in edges:
-        efilt[g.edge(g.vertex(u), g.vertex(v))] = True
-        
-    return source, infection_times, GraphView(g, directed=True, efilt=efilt)
+        tree.add_edge(u, v)
+    return source, infection_times, tree

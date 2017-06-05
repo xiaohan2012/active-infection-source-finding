@@ -94,7 +94,8 @@ def test_vanilla_steiner_tree(cascades_on_tree):
             debug=False,
             verbose=False,
         )
-    assert np.all(np.array([v.out_degree() for v in pred_tree.vertices()]) > 0)
-    assert np.sum([v.out_degree() for v in pred_tree.vertices()]) == (pred_tree.num_vertices() - 1) * 2
-    for o in obs_nodes:
-        pred_tree.vertex(o)        
+        # it's undirected, so test is a bit different
+        assert np.all(np.array([v.out_degree() for v in pred_tree.vertices()]) > 0)
+        assert np.sum([v.out_degree() for v in pred_tree.vertices()]) == (pred_tree.num_vertices() * 2)
+        for o in obs_nodes:
+            pred_tree.vertex(o)

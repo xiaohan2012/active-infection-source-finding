@@ -39,7 +39,9 @@ def is_arborescence(tree):
     if in_degs.max() > 1:
         print('in_degree.max() > 1')
         return False
-
+    if np.sum(in_degs == 1) != (tree.num_vertices() - 1):
+        print('should be: only root has no parent')
+        return False
     return True
 
 

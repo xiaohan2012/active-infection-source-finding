@@ -2,17 +2,13 @@ import math
 import networkx as nx
 import numpy as np
 import random
-import itertools
 
-from graph_tool.all import GraphView, shortest_distance, shortest_path
-from rewards import exact_rewards, order_rewards, dist_rewards
+from graph_tool.all import shortest_path, Graph, GraphView
 
-from joblib import Parallel, delayed
-from tqdm import tqdm
-from utils import chunks
+from utils import get_infection_time, MAXINT
 from cascade import gen_nontrivial_cascade
 
-MAXINT = np.iinfo(np.int32).max
+
 
 
 def sample_graph_from_infection(g):
@@ -100,12 +96,6 @@ def sample_graph_by_p(g, p):
     return GraphView(g, efilt=p)
 
 
-def get_infection_time(g, source):
-    time = shortest_distance(g, source=source).a
-    time[time == MAXINT] = -1
-    return time
-
-
 def simulate_cascade(g, p, source=None, return_tree=False):
     """
     graph_tool version of simulating cascade
@@ -118,13 +108,16 @@ def simulate_cascade(g, p, source=None, return_tree=False):
 
     times = get_infection_time(gv, source)
     if return_tree:
-        efilt = gv.new_edge_property('bool')
-        efilt.set_2d_array(np.zeros(g.num_edges()))
+        all_edges = set()
         for target in np.nonzero(times != -1)[0]:
-            _, edges = shortest_path(gv, source=source, target=gv.vertex(target))
-            for e in edges:
-                efilt[e] = True
-        tree = GraphView(g, efilt=efilt)
+            path = shortest_path(gv, source=source, target=gv.vertex(target))[0]
+            edges = set(zip(path[:-1], path[1:]))
+            all_edges |= edges
+        tree = Graph(directed=True)
+        for _ in range(g.num_vertices()):
+            tree.add_vertex()
+        for u, v in all_edges:
+            tree.add_edge(int(u), int(v))
         return source, times, tree
     else:
         return source, times
