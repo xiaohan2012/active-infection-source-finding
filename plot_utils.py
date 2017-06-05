@@ -18,7 +18,8 @@ def plot_snapshot(g, pos,
                   max_node_size=1000,
                   with_labels=False,
                   arrows=False,
-                  edges=None):
+                  edges=None,
+                  target_nodes=None):
     if is_infection_time:
         node2weight = infeciton_time2weight(node2weight)
 
@@ -32,7 +33,7 @@ def plot_snapshot(g, pos,
         if n == query_node:
             return '^'
         elif n == source_node:
-            return '*'        
+            return '*'
         elif len(queried_nodes) > 0 and n in queried_nodes:
             return 's'
         else:
@@ -47,9 +48,9 @@ def plot_snapshot(g, pos,
         elif len(queried_nodes) > 0 and n in queried_nodes:
             return max_node_size / 4
         elif node2weight[n] != 0:
-            return max_node_size / 4
+            return max_node_size / 8
         else:
-            return max_node_size / 10
+            return max_node_size / 100
     
     # draw by shape
     if ax is None:
@@ -57,6 +58,8 @@ def plot_snapshot(g, pos,
     all_shapes = set(node2shape.values())
     for shape in all_shapes:
         nodes = [n for n in g.nodes() if node2shape[n] == shape]
+        if target_nodes:
+            nodes = [n for n in nodes if n in target_nodes]
         nx.draw_networkx_nodes(g, pos=pos,
                                ax=ax,
                                node_shape=shape,

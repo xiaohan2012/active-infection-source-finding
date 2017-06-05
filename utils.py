@@ -211,12 +211,14 @@ def build_minimum_tree(g, root, terminals, edges, directed=True):
     t.set_vertex_filter(vfilt)
     return t
 
-
+# @profile
 def to_directed(g, t, root):
     new_t = Graph(directed=True)
     all_edges = set()
-    for target in t.vertices():
-        path = shortest_path(t, source=root, target=t.vertex(target))[0]
+    leaves = [v for v in t.vertices()
+              if v.out_degree() == 1]
+    for target in leaves:
+        path = shortest_path(t, source=root, target=target)[0]
         edges = set(zip(path[:-1], path[1:]))
         all_edges |= edges
 

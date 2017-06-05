@@ -3,7 +3,7 @@ import numpy as np
 from copy import copy
 from graph_tool import Graph
 
-
+# @profile
 def gen_cascade(g, p, source=None, stop_fraction=0.5):
     if source is None:
         source = random.choice(np.arange(g.num_vertices()))

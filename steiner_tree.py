@@ -47,7 +47,7 @@ def build_closure(g, terminals,
 
 
 # @profile
-def get_steiner_tree(g, root, obs_nodes, debug=False, verbose=False):
+def get_steiner_tree(g, obs_nodes, debug=False, verbose=False):
     gc, eweight, r2pred = build_closure(g, obs_nodes,
                                         debug=debug, verbose=verbose)
 

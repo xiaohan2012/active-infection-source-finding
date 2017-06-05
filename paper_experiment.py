@@ -46,7 +46,7 @@ def get_tree(g, infection_times, source, obs_nodes, method, verbose=False, debug
                             verbose=verbose)
     return tree
 
-
+# @profile
 def run_k_rounds(g, p, q, model, method,
                  result_dir,
                  k=100,
@@ -143,4 +143,4 @@ method: {}""".format(gtype, model, p, q, k, method))
 
         stat.to_pickle(output_path)
     else:
-        print('done')
+        print('done')        
