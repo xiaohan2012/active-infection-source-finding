@@ -73,7 +73,7 @@ def run_k_rounds(g, p, q, model, method,
         pred_edges = [(int(u), int(v)) for u, v in tree.edges()]
         pkl.dump((infection_times, source, obs_nodes, true_edges, pred_edges),
                  open(result_dir + '/{}.pkl'.format(i), 'wb'))
-
+        rows.append([time.time() - stime])
         if DUMP_PERFORMANCE:
             if tree:
                 scores = evaluate_performance(g, tree, obs_nodes, infection_times)
@@ -88,7 +88,8 @@ def run_k_rounds(g, p, q, model, method,
 
             df = pd.DataFrame(rows, columns=['mmc', 'prec', 'rec', 'obj', 'time'])
             return df.describe()
-
+    df = pd.DataFrame(rows, columns=['time'])
+    return df.describe()
 
 if __name__ == '__main__':
     import argparse
@@ -143,4 +144,6 @@ method: {}""".format(gtype, model, p, q, k, method))
 
         stat.to_pickle(output_path)
     else:
+        print('write result to {}'.format(output_path))
+        stat.to_pickle(output_path)
         print('done')        
