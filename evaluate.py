@@ -11,6 +11,11 @@ from sklearn.metrics.pairwise import cosine_similarity
 from scipy.stats import kendalltau
 
 
+def edge_order_accuracy(pred_edges, infection_times):
+    n_correct_edges = sum(1 for u, v in pred_edges if infection_times[u] <= infection_times[v])
+    return n_correct_edges / len(pred_edges)
+
+
 def weighted_precision_recall(common_nodes, true_nodes, pred_nodes, weights, weight_map_func):
     common_values = weight_map_func(list(common_nodes), weights)
     true_values = weight_map_func(list(true_nodes), weights)
@@ -54,8 +59,8 @@ def evaluate_performance(g, root, source, pred_edges, obs_nodes, infection_times
     # time weighted node precision
     n_prec_t, n_rec_t = weighted_precision_recall(
         common_nodes, true_nodes, pred_nodes,
-        time_mapping,
-        infection_times)
+        infection_times,
+        time_mapping)
     
     pred_tree = edges2graph(g, pred_edges)
 
@@ -79,12 +84,14 @@ def evaluate_performance(g, root, source, pred_edges, obs_nodes, infection_times
     e_prec = len(common_edges) / len(pred_edges)
     e_rec = len(common_edges) / len(true_edges)
 
+    # order accuracy on edge
+    order_accuracy = edge_order_accuracy(pred_edges, infection_times)
     # leaves = get_leaves(true_tree)
     # true_tree_paths = get_paths(true_tree, source, leaves)
     # corrs = get_rank_corrs(pred_tree, root, true_tree_paths, debug=False)
 
     # return (n_prec, n_rec, obj, cosine_sim, e_prec, e_rec, np.mean(corrs))
-    return (n_prec, n_rec, obj, cosine_sim, e_prec, e_rec, rank_corr, n_prec_t, n_rec_t)
+    return (n_prec, n_rec, obj, cosine_sim, e_prec, e_rec, rank_corr, n_prec_t, n_rec_t, order_accuracy)
 
 
 def evaluate_from_result_dir(g, result_dir, qs):
@@ -113,7 +120,8 @@ def evaluate_from_result_dir(g, result_dir, qs):
                                              'cos-sim',
                                              'e.prec', 'e.rec',
                                              'rank-corr',
-                                             'n.prec-t', 'n.rec-t'
+                                             'n.prec-t', 'n.rec-t',
+                                             'order accuracy'
             ])
             yield (path, df)
         else:
