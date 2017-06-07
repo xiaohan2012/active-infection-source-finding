@@ -92,7 +92,6 @@ def evaluate_performance(g, root, source, pred_edges, obs_nodes, infection_times
     obj = len(pred_edges)
 
     pred_tree = edges2graph(g, pred_edges)
-    true_tree = edges2graph(g, true_edges)
 
     if root is None:
         root = next(v for v in pred_tree.vertices() if v.in_degree() == 0 and v.out_degree() > 0)
@@ -108,6 +107,7 @@ def evaluate_performance(g, root, source, pred_edges, obs_nodes, infection_times
 
     tree_nodes = list({u for e in pred_edges for u in e})
     cosine_sim = cosine_similarity([pred_times[tree_nodes]], [infection_times[tree_nodes]])[0, 0]
+    rank_corr = kendalltau(pred_times[tree_nodes], infection_times[tree_nodes])[0]
 
     common_edges = set(pred_edges).intersection(true_edges)
     e_prec = len(common_edges) / len(pred_edges)
@@ -118,7 +118,8 @@ def evaluate_performance(g, root, source, pred_edges, obs_nodes, infection_times
     # corrs = get_rank_corrs(pred_tree, root, true_tree_paths, debug=False)
 
     # return (n_prec, n_rec, obj, cosine_sim, e_prec, e_rec, np.mean(corrs))
-    return (n_prec, n_rec, obj, cosine_sim, e_prec, e_rec)
+    return (n_prec, n_rec, obj, cosine_sim, e_prec, e_rec, rank_corr)
+
 
 def evaluate_from_result_dir(g, result_dir, qs):
     for q in tqdm(qs):
@@ -142,7 +143,7 @@ def evaluate_from_result_dir(g, result_dir, qs):
         path = result_dir + "/{}.pkl".format(q)
         if rows:
             df = pd.DataFrame(rows, columns=['n.prec', 'n.rec', 'obj', 'cos-sim',
-                                             'e.prec', 'e.rec'
+                                             'e.prec', 'e.rec', 'rank-corr'
             ])
             yield (path, df)
         else:
