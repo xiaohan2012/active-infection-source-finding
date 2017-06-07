@@ -6,65 +6,25 @@ from graph_tool.all import load_graph, GraphView
 from glob import glob
 from tqdm import tqdm
 from utils import edges2graph, get_infection_time, earliest_obs_node, to_directed, get_leaves, get_paths
+
 from sklearn.metrics.pairwise import cosine_similarity
-
-
-from graph_tool.topology import shortest_path
 from scipy.stats import kendalltau
 
 
-def get_rank_corrs(tree, root, true_tree_paths, debug=False):
-    pred_leaves = get_leaves(tree)
-    #     print(pred_leaves)
-    corrs = []
-    assert len(pred_leaves) > 0, 'empty predicted leaves'
-    if debug:
-        print('pred_leaves', pred_leaves)
-    for o in pred_leaves:
-        if o == root:
-            continue
-        true_root = next(v for v in tree.vertices() if v.in_degree() == 0 and v.out_degree() > 0)
-        assert true_root == root
-        path = shortest_path(tree, source=root, target=tree.vertex(o))[0]
-        path = list(map(int, path))
-        path_nodes = set(path)
-        assert len(path) > 0
-        if path_nodes:
-            best_true_path = max(true_tree_paths,
-                                 key=lambda true_path: jaccard_sim(set(true_path), path_nodes))
+def weighted_precision_recall(common_nodes, true_nodes, pred_nodes, weights, weight_map_func):
+    common_values = weight_map_func(list(common_nodes), weights)
+    true_values = weight_map_func(list(true_nodes), weights)
+    pred_values = weight_map_func(list(pred_nodes), weights)
+    time_prec = common_values.sum() / pred_values.sum()
+    time_rec = common_values.sum() / true_values.sum()
+    return (float(time_prec), float(time_rec))
 
-            # some similarity        
-            if debug:
-                print('path', path)
-                print('best_true_path', best_true_path)
-            common_nodes = path_nodes.intersection(set(best_true_path))
-            if len(common_nodes) > 1:
-                if debug:
-                    print('common_nodes', common_nodes)
-                n2rank_pred = {n: i for i, n in enumerate(path)}
-                n2rank_true = {n: i for i, n in enumerate(best_true_path)}
-                if debug:
-                    print('n2rank_pred', n2rank_pred)
-                    print('n2rank_true', n2rank_true)
-                pred_rank = [n2rank_pred[n] for n in common_nodes]
-                true_rank = [n2rank_true[n] for n in common_nodes]
-
-                if debug:
-                    print('pred_rank', pred_rank)
-                    print('true_rank', true_rank)                
-                corr = kendalltau(pred_rank, true_rank)
-                
-                if debug:
-                    print('corr', corr[0])
-                    print()
-                corrs.append(corr[0])
-    #             print()
-    if len(corrs) == 0:
-        # print('empty corrs')
-        pass
-        # raise ValueError('empty corrs list')
-    return corrs
-
+    
+def time_mapping(nodes, infection_times):
+    # value decreases linearly as actual infection time
+    max_time = infection_times.max()
+    return (max_time - infection_times[nodes] + 1)
+    
 
 def jaccard_sim(s1, s2):
     return len(s1.intersection(s2)) / len(s1.union(s2))
@@ -91,6 +51,12 @@ def evaluate_performance(g, root, source, pred_edges, obs_nodes, infection_times
     n_rec = len(common_nodes) / len(true_nodes)
     obj = len(pred_edges)
 
+    # time weighted node precision
+    n_prec_t, n_rec_t = weighted_precision_recall(
+        common_nodes, true_nodes, pred_nodes,
+        time_mapping,
+        infection_times)
+    
     pred_tree = edges2graph(g, pred_edges)
 
     if root is None:
@@ -118,7 +84,7 @@ def evaluate_performance(g, root, source, pred_edges, obs_nodes, infection_times
     # corrs = get_rank_corrs(pred_tree, root, true_tree_paths, debug=False)
 
     # return (n_prec, n_rec, obj, cosine_sim, e_prec, e_rec, np.mean(corrs))
-    return (n_prec, n_rec, obj, cosine_sim, e_prec, e_rec, rank_corr)
+    return (n_prec, n_rec, obj, cosine_sim, e_prec, e_rec, rank_corr, n_prec_t, n_rec_t)
 
 
 def evaluate_from_result_dir(g, result_dir, qs):
@@ -142,8 +108,12 @@ def evaluate_from_result_dir(g, result_dir, qs):
             rows.append(scores)
         path = result_dir + "/{}.pkl".format(q)
         if rows:
-            df = pd.DataFrame(rows, columns=['n.prec', 'n.rec', 'obj', 'cos-sim',
-                                             'e.prec', 'e.rec', 'rank-corr'
+            df = pd.DataFrame(rows, columns=['n.prec', 'n.rec',
+                                             'obj',
+                                             'cos-sim',
+                                             'e.prec', 'e.rec',
+                                             'rank-corr',
+                                             'n.prec-t', 'n.rec-t'
             ])
             yield (path, df)
         else:
