@@ -164,13 +164,24 @@ def gt2nx(g, root, terminals, node_attrs=None, edge_attrs=None):
     return gx
 
 
+def filter_nodes_by_edges(t, edges):
+    vfilt = t.new_vertex_property('bool')
+    vfilt.a = False
+    nodes = {u for e in edges for u in e}
+    for n in nodes:
+        vfilt[n] = True
+    t.set_vertex_filter(vfilt)
+    return t
+
+
 def edges2graph(g, edges):
     tree = Graph(directed=True)
     for _ in range(g.num_vertices()):
         tree.add_vertex()
     for u, v in edges:
         tree.add_edge(int(u), int(v))
-    return tree
+
+    return filter_nodes_by_edges(tree, edges)
 
 
 def earliest_obs_node(obs_nodes, infection_times):

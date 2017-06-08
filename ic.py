@@ -9,8 +9,6 @@ from utils import get_infection_time, MAXINT
 from cascade import gen_nontrivial_cascade
 
 
-
-
 def sample_graph_from_infection(g):
     rands = np.random.rand(g.number_of_edges())
     active_edges = [(u, v) for (u, v), r in zip(g.edges_iter(), rands) if g[u][v]['p'] >= r]
