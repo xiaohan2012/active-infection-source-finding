@@ -20,7 +20,7 @@ def observe_cascade(c, source, q, method='uniform', source_includable=False):
 
 
 def gen_nontrivial_cascade(g, p, q, model='ic', source=None, return_tree=False, source_includable=False):
-    assert model in {'ic', 'si', 'sp'}
+    assert model in {'ic', 'si', 'sp', 'ct'}
     while True:
         if model == 'ic':
             from ic import simulate_cascade
@@ -30,6 +30,9 @@ def gen_nontrivial_cascade(g, p, q, model='ic', source=None, return_tree=False, 
             rts = gen_cascade(g, p, source=source)
         elif model == 'sp':
             from sp import gen_cascade
+            rts = gen_cascade(g, source=source)
+        elif model == 'ct':
+            from ctic import gen_cascade
             rts = gen_cascade(g, source=source)
         
         source, c = rts[:2]

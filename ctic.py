@@ -7,7 +7,7 @@ from utils import edges2graph
 from feasibility import is_arborescence
 
 
-def gen_cascade(g, scale=1.0, source=None, stop_fraction=0.5, return_tree=False):
+def gen_cascade(g, scale=1.0, source=None, stop_fraction=0.5, return_tree=True):
     rands = np.random.exponential(scale, g.num_edges())
     delays = g.new_edge_property('float')
     delays.set_2d_array(rands)
