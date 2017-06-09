@@ -18,7 +18,7 @@ def observe_cascade(c, source, q, method='uniform', source_includable=False):
     elif method == 'late':
         return np.argsort(c)[-num_obs:]
 
-
+# @profile
 def gen_nontrivial_cascade(g, p, q, model='ic', source=None, return_tree=False, source_includable=False):
     assert model in {'ic', 'si', 'sp', 'ct'}
     while True:

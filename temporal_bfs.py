@@ -81,10 +81,6 @@ def temporal_bfs(g, root, infection_times, source, terminals,
     for v in terminals:
         processed_by_time[infection_times[v]] += 1
 
-    terminals_sorted = list(sorted(
-        terminals,
-        key=lambda t: (infection_times[t], (t not in visited))))
-
     all_times_sorted = list(sorted(map(infection_times.__getitem__, terminals)))
     tmin = infection_times[root]
     tmin_idx = 0
@@ -115,12 +111,14 @@ def temporal_bfs(g, root, infection_times, source, terminals,
             tmin = all_times_sorted[tmin_idx]
 
         # re-enqueue delayed terminal nodes
-        for v in terminals_sorted:
-            if v in delayed:
-                if infection_times[v] > tmin:
-                    break
-                else:
-                    delayed.remove(v)
-                    queue.append(v)
-    
+        sorted_delayed = list(sorted(
+            delayed,
+            key=lambda t: (infection_times[t], (t not in visited))))
+        for v in sorted_delayed:
+            if infection_times[v] > tmin:
+                break
+            else:
+                delayed.remove(v)
+                queue.append(v)
+        
     return build_minimum_tree(g, root, terminals, edges)

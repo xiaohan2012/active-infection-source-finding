@@ -74,7 +74,7 @@ def test_mst_truncated(cascades_on_tree):
         assert is_feasible(tree, root, obs_nodes, infection_times)
 
 
-def test_mst_temporal_bfs(cascades_on_tree):
+def test_temporal_bfs(cascades_on_tree):
     for g, infection_times, source, obs_nodes, true_tree, model, q, i in cascades_on_tree:
         print(model, q, i)
         root = earliest_obs_node(obs_nodes, infection_times)
