@@ -76,7 +76,7 @@ def run_k_rounds(g, p, q, model, method,
             rows.append(time_cost)
     else:
         from joblib import Parallel, delayed
-        rows = Parallel(n_jobs=-1)(delayed(one_run)(g, p, q, model, result_dir, i,
+        rows = Parallel(n_jobs=6)(delayed(one_run)(g, p, q, model, result_dir, i,
                                                     verbose, debug)
                                    for i in iters)
 
