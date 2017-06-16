@@ -7,32 +7,14 @@ from glob import glob
 from tqdm import tqdm
 from utils import edges2graph, get_infection_time, earliest_obs_node, to_directed, get_leaves, get_paths
 
-from sklearn.metrics.pairwise import cosine_similarity
 from scipy.stats import kendalltau
 
 
 def edge_order_accuracy(pred_edges, infection_times):
-    n_correct_edges = sum(1 for u, v in pred_edges if infection_times[u] <= infection_times[v])
+    n_correct_edges = sum(1
+                          for u, v in pred_edges
+                          if infection_times[u] <= infection_times[v])
     return n_correct_edges / len(pred_edges)
-
-
-def weighted_precision_recall(common_nodes, true_nodes, pred_nodes, weights, weight_map_func):
-    common_values = weight_map_func(list(common_nodes), weights)
-    true_values = weight_map_func(list(true_nodes), weights)
-    pred_values = weight_map_func(list(pred_nodes), weights)
-    time_prec = common_values.sum() / pred_values.sum()
-    time_rec = common_values.sum() / true_values.sum()
-    return (float(time_prec), float(time_rec))
-
-    
-def time_mapping(nodes, infection_times):
-    # value decreases linearly as actual infection time
-    max_time = infection_times.max()
-    return (max_time - infection_times[nodes] + 1)
-    
-
-def jaccard_sim(s1, s2):
-    return len(s1.intersection(s2)) / len(s1.union(s2))
 
     
 def infer_infection_time_from_tree(t, source):
@@ -41,9 +23,13 @@ def infer_infection_time_from_tree(t, source):
     t.set_vertex_filter(b)
     return get_infection_time(t, source=source)
 
+
 # @profile
 def evaluate_performance(g, root, source, pred_edges, obs_nodes, infection_times,
                          true_edges, convert_to_directed=False):
+    # change -1 to infinity (for order comparison)
+    # infection_times[infection_times == -1] = float('inf')
+
     true_nodes = {i for e in true_edges for i in e}
     pred_nodes = {i for e in pred_edges for i in e}
     
@@ -56,16 +42,12 @@ def evaluate_performance(g, root, source, pred_edges, obs_nodes, infection_times
     n_rec = len(common_nodes) / len(true_nodes)
     obj = len(pred_edges)
 
-    # time weighted node precision
-    n_prec_t, n_rec_t = weighted_precision_recall(
-        common_nodes, true_nodes, pred_nodes,
-        infection_times,
-        time_mapping)
-    
     pred_tree = edges2graph(g, pred_edges)
 
     if root is None:
-        root = next(v for v in pred_tree.vertices() if v.in_degree() == 0 and v.out_degree() > 0)
+        root = next(v
+                    for v in pred_tree.vertices()
+                    if v.in_degree() == 0 and v.out_degree() > 0)
 
     if convert_to_directed:
         # print('convert to directed')
@@ -75,23 +57,31 @@ def evaluate_performance(g, root, source, pred_edges, obs_nodes, infection_times
                                 root)
 
     pred_times = infer_infection_time_from_tree(pred_tree, root)
-
-    tree_nodes = list({u for e in pred_edges for u in e})
-    cosine_sim = cosine_similarity([pred_times[tree_nodes]], [infection_times[tree_nodes]])[0, 0]
-    rank_corr = kendalltau(pred_times[tree_nodes], infection_times[tree_nodes])[0]
+    # pred_times = np.asarray(pred_times, dtype=float)
+    # pred_times[pred_times == -1] = float('inf')
+    
+    # consider only predicted nodes that are actual infections
+    nodes = list(common_nodes)
+    rank_corr = kendalltau(pred_times[nodes], infection_times[nodes])[0]
 
     common_edges = set(pred_edges).intersection(true_edges)
     e_prec = len(common_edges) / len(pred_edges)
     e_rec = len(common_edges) / len(true_edges)
 
     # order accuracy on edge
-    order_accuracy = edge_order_accuracy(pred_edges, infection_times)
+    edges = [e for e in pred_edges
+             if (e[0] in common_nodes and
+                 e[1] in common_nodes)]
+    if len(edges) > 0:
+        order_accuracy = edge_order_accuracy(edges, infection_times)
+    else:
+        order_accuracy = 0.0
     # leaves = get_leaves(true_tree)
     # true_tree_paths = get_paths(true_tree, source, leaves)
     # corrs = get_rank_corrs(pred_tree, root, true_tree_paths, debug=False)
 
     # return (n_prec, n_rec, obj, cosine_sim, e_prec, e_rec, np.mean(corrs))
-    return (n_prec, n_rec, obj, cosine_sim, e_prec, e_rec, rank_corr, n_prec_t, n_rec_t, order_accuracy)
+    return (n_prec, n_rec, obj, e_prec, e_rec, rank_corr, order_accuracy)
 
 
 def evaluate_from_result_dir(g, result_dir, qs):
@@ -117,10 +107,8 @@ def evaluate_from_result_dir(g, result_dir, qs):
         if rows:
             df = pd.DataFrame(rows, columns=['n.prec', 'n.rec',
                                              'obj',
-                                             'cos-sim',
                                              'e.prec', 'e.rec',
                                              'rank-corr',
-                                             'n.prec-t', 'n.rec-t',
                                              'order accuracy'
             ])
             yield (path, df)
