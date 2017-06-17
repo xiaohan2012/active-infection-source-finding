@@ -6,6 +6,7 @@ from graph_tool.all import load_graph, GraphView
 from glob import glob
 from tqdm import tqdm
 from utils import edges2graph, get_infection_time, earliest_obs_node, to_directed, get_leaves, get_paths
+from infer_time import fill_missing_time
 
 from scipy.stats import kendalltau
 
@@ -15,14 +16,7 @@ def edge_order_accuracy(pred_edges, infection_times):
                           for u, v in pred_edges
                           if infection_times[u] <= infection_times[v])
     return n_correct_edges / len(pred_edges)
-
     
-def infer_infection_time_from_tree(t, source):
-    b = t.new_vertex_property('bool')
-    b.a = True
-    t.set_vertex_filter(b)
-    return get_infection_time(t, source=source)
-
 
 # @profile
 def evaluate_performance(g, root, source, pred_edges, obs_nodes, infection_times,
@@ -56,7 +50,7 @@ def evaluate_performance(g, root, source, pred_edges, obs_nodes, infection_times
                                 GraphView(pred_tree, directed=False),
                                 root)
 
-    pred_times = infer_infection_time_from_tree(pred_tree, root)
+    pred_times = fill_missing_time(g, pred_tree, root, obs_nodes, infection_times, debug=False)
     # pred_times = np.asarray(pred_times, dtype=float)
     # pred_times[pred_times == -1] = float('inf')
     

@@ -107,6 +107,7 @@ def test_generalized_jaccard_similarity():
 
 def infeciton_time2weight(ts):
     """invert the infection times so that earlier infected nodes have larger weight"""
+    ts = np.array(ts)  # copy it
     max_val = np.max(ts)
     ts[ts == -1] = max_val + 1
     return np.array(
@@ -227,7 +228,7 @@ def to_directed(g, t, root):
     new_t = Graph(directed=True)
     all_edges = set()
     leaves = [v for v in t.vertices()
-              if v.out_degree() == 1]
+              if v.degree() == 1 and t != root]
     for target in leaves:
         path = shortest_path(t, source=root, target=target)[0]
         edges = set(zip(path[:-1], path[1:]))
@@ -242,10 +243,12 @@ def to_directed(g, t, root):
 
 def get_leaves(t):
     # print([(int(v), v.out_degree(), v.in_degree()) for v in t.vertices()])
-    return [v for v in t.vertices()
-            if v.out_degree() == 0 and v.in_degree() > 0]
+    return np.nonzero((t.degree_property_map(deg='in').a == 1)
+                      & (t.degree_property_map(deg='out').a == 0))[0]
 
 
 def get_paths(t, source, terminals):
     return [list(map(int, shortest_path(t, source=source, target=t.vertex(int(n)))[0]))
             for n in terminals]
+
+

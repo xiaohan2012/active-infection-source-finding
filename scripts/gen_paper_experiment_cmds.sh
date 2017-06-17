@@ -3,18 +3,18 @@
 # gtypes=(p2p-gnutella08 arxiv-hep-th enron-email dblp-collab)
 # gtypes=(p2p-gnutella08 arxiv-hep-th enron-email)
 # gtypes=(p2p-gnutella08)
-gtypes=(dblp-collab slashdot twitter gplus)
+# gtypes=(dblp-collab slashdot twitter gplus)
 # gtypes=(arxiv-hep-th enron-email)
 # gtypes=("barabasi/2-6/" "barabasi/2-7/" "barabasi/2-8/" "barabasi/2-9/"
 # 	"barabasi/2-10/" "barabasi/2-11/" "barabasi/2-12/" "barabasi/2-13/"
 # 	"barabasi/2-14/")
-# gtypes=("barabasi-64")
+gtypes=("barabasi-64")
 # gtypes=("grid-64")
 # gtypes=("grid-64")
 # methods=(mst tbfs no-order greedy)
-# methods=(mst tbfs no-order)
+methods=(mst tbfs no-order)
 # methods=(mst)
-# model_params=("ct -p 0.0")  # barabasi
+model_params=("si -p 0.1" "ct -p 0.0")  # barabasi
 
 # model_params=("ic -p 0.0831108693813754")  # barabasi
 # model_params=("ic -p 0.2660444431189779")  #  grid
@@ -39,9 +39,9 @@ else
     
 fi
 
-model_params=("si -p 0.1")
-qs=(0.1)
-methods=(tbfs)
+# model_params=("si -p 0.1")
+# qs=(0.1)
+# methods=(tbfs)
 
 for gtype in $gtypes; do
     for method in $methods; do
