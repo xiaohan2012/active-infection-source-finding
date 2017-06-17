@@ -228,7 +228,7 @@ def to_directed(g, t, root):
     new_t = Graph(directed=True)
     all_edges = set()
     leaves = [v for v in t.vertices()
-              if v.degree() == 1 and t != root]
+              if (v.out_degree() + v.in_degree()) == 1 and t != root]
     for target in leaves:
         path = shortest_path(t, source=root, target=target)[0]
         edges = set(zip(path[:-1], path[1:]))
