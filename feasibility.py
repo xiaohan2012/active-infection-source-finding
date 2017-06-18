@@ -2,6 +2,7 @@ import numpy as np
 from graph_tool import GraphView
 from graph_tool.all import pbfs_search, label_components
 from steiner_tree_mst import extract_edges_from_pred, init_visitor
+from gt_utils import get_roots
 
 
 def is_order_respected(tree, root, obs_nodes, infection_times):
@@ -42,6 +43,10 @@ def is_arborescence(tree):
     if np.sum(in_degs == 1) != (tree.num_vertices() - 1):
         print('should be: only root has no parent')
         return False
+
+    roots = get_roots(tree)
+    assert len(roots) == 1, '>1 roots'
+    
     return True
 
 

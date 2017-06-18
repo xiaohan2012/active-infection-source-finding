@@ -1,11 +1,17 @@
 import networkx as nx
-from graph_tool import Graph
 import numpy as np
+from graph_tool import Graph
+from graph_tool.search import bfs_search, BFSVisitor
 
 
 def get_leaves(t):
     return np.nonzero((t.degree_property_map(deg='in').a == 1)
                       & (t.degree_property_map(deg='out').a == 0))[0]
+
+
+def get_roots(t):
+    return np.nonzero((t.degree_property_map(deg='out').a > 0)
+                      & (t.degree_property_map(deg='in').a == 0))[0]
 
 
 def extract_edges(g):
@@ -72,3 +78,30 @@ def bottom_up_traversal(t, vis=None, debug=False):
                 if debug:
                     print('pushing {}'.format(u))
                 s.append(u)
+
+
+def edges_to_directed_tree(g, root, edges):
+    t = Graph(directed=False)
+    for _ in range(g.num_vertices()):
+        t.add_vertex()
+
+    for u, v in edges:
+        t.add_edge(u, v)
+
+    class Visitor(BFSVisitor):
+        def __init__(self):
+            self.edges = set()
+            
+        def tree_edge(self, e):
+            s, t = int(e.source()), int(e.target())
+            self.edges.add((s, t))
+
+    vis = Visitor()
+    bfs_search(t, source=root, visitor=vis)
+
+    t.clear_edges()
+    t.set_directed(True)
+    for u, v in vis.edges:
+        t.add_edge(u, v)
+
+    return filter_nodes_by_edges(t, edges)

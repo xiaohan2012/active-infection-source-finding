@@ -53,7 +53,8 @@ def fill_missing_time(g, t, root, obs_nodes, infection_times, debug=False):
     for v in hidden_nodes:
         ans, des = td_vis.pred[v], bu_vis.pred[v]
         assert ans != -1
-        assert des != -1
+
+        assert des != -1, '{}'.format((t.vertex(v).in_degree(), t.vertex(v).out_degree()))  # 1, 0, v=root
 
         if debug:
             print(v, ans, des)

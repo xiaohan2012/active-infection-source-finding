@@ -1,14 +1,15 @@
 import os
-import numpy as np
 import pandas as pd
 import pickle as pkl
-from graph_tool.all import load_graph, GraphView
+from graph_tool.all import load_graph
 from glob import glob
 from tqdm import tqdm
-from utils import edges2graph, get_infection_time, earliest_obs_node, to_directed, get_leaves, get_paths
+from utils import edges2graph, earliest_obs_node
 from infer_time import fill_missing_time
 
+from gt_utils import edges_to_directed_tree
 from scipy.stats import kendalltau
+from feasibility import is_arborescence
 
 
 def edge_order_accuracy(pred_edges, infection_times):
@@ -36,21 +37,21 @@ def evaluate_performance(g, root, source, pred_edges, obs_nodes, infection_times
     n_rec = len(common_nodes) / len(true_nodes)
     obj = len(pred_edges)
 
-    pred_tree = edges2graph(g, pred_edges)
+    if convert_to_directed:
+        # print('convert to directed')
+        # assert not pred_tree.is_directed()
+        pred_tree = edges_to_directed_tree(g, root, pred_edges)
+    else:
+        pred_tree = edges2graph(g, pred_edges)
 
-    if root is None:
         root = next(v
                     for v in pred_tree.vertices()
                     if v.in_degree() == 0 and v.out_degree() > 0)
 
-    if convert_to_directed:
-        # print('convert to directed')
-        # assert not pred_tree.is_directed()
-        pred_tree = to_directed(g,
-                                GraphView(pred_tree, directed=False),
-                                root)
-
+    assert is_arborescence(pred_tree)
+    
     pred_times = fill_missing_time(g, pred_tree, root, obs_nodes, infection_times, debug=False)
+    
     # pred_times = np.asarray(pred_times, dtype=float)
     # pred_times[pred_times == -1] = float('inf')
     
@@ -93,9 +94,16 @@ def evaluate_from_result_dir(g, result_dir, qs):
             else:
                 root = None
 
-            scores = evaluate_performance(g, root, source, pred_edges, obs_nodes,
-                                          infection_times, true_edges,
-                                          convert_to_directed=convert_to_directed)
+            try:
+                scores = evaluate_performance(g, root, source, pred_edges, obs_nodes,
+                                              infection_times, true_edges,
+                                              convert_to_directed=convert_to_directed)
+            except AssertionError:
+                import sys
+                print(p)
+                print(sys.exc_info()[0])
+                raise
+
             rows.append(scores)
         path = result_dir + "/{}.pkl".format(q)
         if rows:
