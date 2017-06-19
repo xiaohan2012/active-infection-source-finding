@@ -10,6 +10,7 @@ from steiner_tree_mst import steiner_tree_mst, build_closure
 from steiner_tree_greedy import steiner_tree_greedy
 from steiner_tree import get_steiner_tree
 from temporal_bfs import temporal_bfs
+from gt_utils import extract_edges
 
 
 DUMP_PERFORMANCE = False
@@ -49,8 +50,8 @@ def one_run(g, p, q, model, result_dir, i, verbose, debug):
                     debug=debug)
 
     # pickle cascade and pred_tree
-    true_edges = [(int(u), int(v)) for u, v in true_tree.edges()]
-    pred_edges = [(int(u), int(v)) for u, v in tree.edges()]
+    true_edges = extract_edges(true_tree)
+    pred_edges = extract_edges(tree)
     pkl.dump((infection_times, source, obs_nodes, true_edges, pred_edges),
              open(result_dir + '/{}.pkl'.format(i), 'wb'))
     return time.time() - stime

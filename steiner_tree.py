@@ -4,7 +4,7 @@ from graph_tool.search import pbfs_search
 from steiner_tree_mst import get_edges
 from utils import init_visitor, extract_edges_from_pred
 from graph_tool.topology import min_spanning_tree
-from gt_utils import filter_nodes_by_edges, edges_to_directed_tree
+from gt_utils import edges_to_directed_tree, build_minimum_tree, extract_edges
 
 
 # @profile
@@ -59,10 +59,13 @@ def get_steiner_tree(g, root, obs_nodes, debug=False, verbose=False):
     for e in tree.edges():
         u, v = map(int, e)
         for i, j in extract_edges_from_pred(g, u, v, r2pred[u]):
-            i, j = sorted([i, j])
-            tree_edges.add((i, j))
+            tree_edges.add((j, i))
 
-    return edges_to_directed_tree(g, root, tree_edges)
+    # a bit involved...
+    und_tree = edges_to_directed_tree(g, root, tree_edges)
+    return build_minimum_tree(g, root, obs_nodes, extract_edges(und_tree))
+
+    # return build_minimum_tree(g, root, obs_nodes, tree_edges, directed=True)
     # t = Graph(directed=False)
 
     # for _ in range(g.num_vertices()):

@@ -1,7 +1,7 @@
 import networkx as nx
 import numpy as np
 from graph_tool import Graph, GraphView
-from graph_tool.search import bfs_search, BFSVisitor
+from graph_tool.search import bfs_search, BFSVisitor, pbfs_search
 from graph_tool.topology import label_components
 
 
@@ -166,3 +166,69 @@ def remove_redundant_edges_by_bfs(g, root):
 
     g.set_edge_filter(efilt)
     return g
+
+
+class MyVisitor(BFSVisitor):
+
+    def __init__(self, pred, dist):
+        """np.ndarray"""
+        self.pred = pred
+        self.dist = dist
+
+    def black_target(self, e):
+        s, t = int(e.source()), int(e.target())
+        if self.pred[t] == -1:
+            self.pred[t] = s
+            self.dist[t] = self.dist[s] + 1
+    
+    def tree_edge(self, e):
+        s, t = int(e.source()), int(e.target())
+        self.pred[t] = s
+        self.dist[t] = self.dist[s] + 1
+
+
+def init_visitor(g, root):
+    dist = np.ones(g.num_vertices()) * -1
+    dist[root] = 0
+    pred = np.ones(g.num_vertices(), dtype=int) * -1
+    vis = MyVisitor(pred, dist)
+    return vis
+
+
+def extract_edges_from_pred(g, source, target, pred):
+    """edges from target to source"""
+    edges = []
+    c = target
+    while c != source and pred[c] != -1:
+        edges.append((pred[c], c))
+        c = pred[c]
+    return edges
+
+
+def build_minimum_tree(g, root, terminals, edges, directed=True):
+    """remove redundant edges from `edges` so that root can reach each node in terminals
+    """
+    # build the tree
+    t = Graph(directed=directed)
+
+    for _ in range(g.num_vertices()):
+        t.add_vertex()
+
+    for (u, v) in edges:
+        t.add_edge(u, v)
+
+    # mask out redundant edges
+    vis = init_visitor(t, root)
+    pbfs_search(t, source=root, terminals=list(terminals), visitor=vis)
+
+    minimum_edges = {e
+                     for u in terminals
+                     for e in extract_edges_from_pred(t, root, u, vis.pred)}
+    # print(minimum_edges)
+    efilt = t.new_edge_property('bool')
+    efilt.a = False
+    for u, v in minimum_edges:
+        efilt[u, v] = True
+    t.set_edge_filter(efilt)
+
+    return filter_nodes_by_edges(t, minimum_edges)

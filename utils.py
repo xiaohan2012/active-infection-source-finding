@@ -215,13 +215,8 @@ def build_minimum_tree(g, root, terminals, edges, directed=True):
         efilt[u, v] = True
     t.set_edge_filter(efilt)
 
-    vfilt = t.new_vertex_property('bool')
-    vfilt.a = False
-    tree_nodes = {u for e in minimum_edges for u in e}
-    for v in tree_nodes:
-        vfilt[v] = True
-    t.set_vertex_filter(vfilt)
-    return t
+    return filter_nodes_by_edges(t, minimum_edges)
+
 
 # @profile
 def to_directed(g, t, root):
