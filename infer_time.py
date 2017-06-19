@@ -64,7 +64,7 @@ def fill_missing_time(g, t, root, obs_nodes, infection_times, debug=False):
         denum = dist[des] - dist[ans]
         numer = dist[v] - dist[ans]
         pred_infection_times[v] = (infection_times[ans] +
-                                   numer / denum * (infection_times[des] - infection_times[ans]))
+                                   abs(numer / denum * (infection_times[des] - infection_times[ans])))
         
         if debug:
             assert pred_infection_times[v] > infection_times[ans]
