@@ -28,7 +28,7 @@ def get_tree(g, infection_times, source, obs_nodes, method, verbose=False, debug
                                    verbose=verbose)
     elif method == 'no-order':
         tree = get_steiner_tree(
-            g, obs_nodes,
+            g, root, obs_nodes,
             debug=False,
             verbose=False,
         )

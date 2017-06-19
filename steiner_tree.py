@@ -4,7 +4,8 @@ from graph_tool.search import pbfs_search
 from steiner_tree_mst import get_edges
 from utils import init_visitor, extract_edges_from_pred
 from graph_tool.topology import min_spanning_tree
-from utils import extract_edges_from_pred
+from gt_utils import filter_nodes_by_edges, edges_to_directed_tree
+
 
 # @profile
 def build_closure(g, terminals,
@@ -47,7 +48,7 @@ def build_closure(g, terminals,
 
 
 # @profile
-def get_steiner_tree(g, obs_nodes, debug=False, verbose=False):
+def get_steiner_tree(g, root, obs_nodes, debug=False, verbose=False):
     gc, eweight, r2pred = build_closure(g, obs_nodes,
                                         debug=debug, verbose=verbose)
 
@@ -61,15 +62,13 @@ def get_steiner_tree(g, obs_nodes, debug=False, verbose=False):
             i, j = sorted([i, j])
             tree_edges.add((i, j))
 
-    t = Graph(directed=False)
+    return edges_to_directed_tree(g, root, tree_edges)
+    # t = Graph(directed=False)
 
-    for _ in range(g.num_vertices()):
-        t.add_vertex()
-    for u, v in tree_edges:
-        t.add_edge(u, v)
-    tree_nodes = {u for e in tree_edges for u in e}
-    vfilt = t.new_vertex_property('bool')
-    for v in tree_nodes:
-        vfilt[v] = True
-    t.set_vertex_filter(vfilt)
-    return t
+    # for _ in range(g.num_vertices()):
+    #     t.add_vertex()
+    # for u, v in tree_edges:
+    #     t.add_edge(u, v)
+
+    # t = filter_nodes_by_edges(t, tree_edges)
+    # return remove_redundant_edges_by_bfs(t, root)

@@ -48,13 +48,15 @@ def fill_missing_time(g, t, root, obs_nodes, infection_times, debug=False):
 
     # infer the time
     hidden_nodes = set(map(int, t.vertices())) - set(obs_nodes)
+    assert (root not in hidden_nodes), 'root is hidden'
+
     pred_infection_times = np.array(infection_times)
     dist = shortest_distance(t, source=root)
     for v in hidden_nodes:
         ans, des = td_vis.pred[v], bu_vis.pred[v]
         assert ans != -1
-
-        assert des != -1, '{}'.format((t.vertex(v).in_degree(), t.vertex(v).out_degree()))  # 1, 0, v=root
+        assert des != -1, \
+                      '{}, {}'.format(v, (t.vertex(v).in_degree(), t.vertex(v).out_degree()))  # 1, 0, v=leave
 
         if debug:
             print(v, ans, des)

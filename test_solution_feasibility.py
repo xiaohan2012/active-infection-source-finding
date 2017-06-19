@@ -11,9 +11,11 @@ from temporal_bfs import temporal_bfs
 from utils import earliest_obs_node
 from feasibility import is_feasible
 from cascade import gen_nontrivial_cascade
+from gt_utils import is_arborescence
+
 
 QS = np.linspace(0.1, 1.0, 10)
-MODELS = ['si', 'ic', 'sp']
+MODELS = ['si', 'ct']
 
 P = 0.5
 K = 10
@@ -89,13 +91,14 @@ def test_temporal_bfs(cascades_on_tree):
 def test_vanilla_steiner_tree(cascades_on_tree):
     for g, infection_times, source, obs_nodes, true_tree, model, q, i in cascades_on_tree:
         print(model, q, i)
+        root = earliest_obs_node(obs_nodes, infection_times)
         pred_tree = get_steiner_tree(
-            g, obs_nodes,
+            g, root, obs_nodes,
             debug=False,
             verbose=False,
         )
         # it's undirected, so test is a bit different
-        assert np.all(np.array([v.out_degree() for v in pred_tree.vertices()]) > 0)
-        assert np.sum([v.out_degree() for v in pred_tree.vertices()]) == (pred_tree.num_vertices() * 2)
+        assert is_arborescence(pred_tree)
+
         for o in obs_nodes:
-            pred_tree.vertex(o)
+            assert pred_tree.vertex(o) is not None

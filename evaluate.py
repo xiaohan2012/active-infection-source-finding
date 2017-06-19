@@ -4,7 +4,7 @@ import pickle as pkl
 from graph_tool.all import load_graph
 from glob import glob
 from tqdm import tqdm
-from utils import edges2graph, earliest_obs_node
+from utils import edges2graph
 from infer_time import fill_missing_time
 
 from gt_utils import edges_to_directed_tree
@@ -21,7 +21,7 @@ def edge_order_accuracy(pred_edges, infection_times):
 
 # @profile
 def evaluate_performance(g, root, source, pred_edges, obs_nodes, infection_times,
-                         true_edges, convert_to_directed=False):
+                         true_edges):
     # change -1 to infinity (for order comparison)
     # infection_times[infection_times == -1] = float('inf')
 
@@ -37,16 +37,11 @@ def evaluate_performance(g, root, source, pred_edges, obs_nodes, infection_times
     n_rec = len(common_nodes) / len(true_nodes)
     obj = len(pred_edges)
 
-    if convert_to_directed:
-        # print('convert to directed')
-        # assert not pred_tree.is_directed()
-        pred_tree = edges_to_directed_tree(g, root, pred_edges)
-    else:
-        pred_tree = edges2graph(g, pred_edges)
+    pred_tree = edges2graph(g, pred_edges)
 
-        root = next(v
-                    for v in pred_tree.vertices()
-                    if v.in_degree() == 0 and v.out_degree() > 0)
+    root = next(v
+                for v in pred_tree.vertices()
+                if v.in_degree() == 0 and v.out_degree() > 0)
 
     assert is_arborescence(pred_tree)
     
@@ -87,17 +82,11 @@ def evaluate_from_result_dir(g, result_dir, qs):
             # TODO: add root
             infection_times, source, obs_nodes, true_edges, pred_edges = pkl.load(open(p, 'rb'))
             
-            convert_to_directed = ("no-order" in p)
-            if convert_to_directed:
-                # baseline does not care where the root is
-                root = earliest_obs_node(obs_nodes, infection_times)
-            else:
-                root = None
+            root = None
 
             try:
                 scores = evaluate_performance(g, root, source, pred_edges, obs_nodes,
-                                              infection_times, true_edges,
-                                              convert_to_directed=convert_to_directed)
+                                              infection_times, true_edges)
             except AssertionError:
                 import sys
                 print(p)
