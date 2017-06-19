@@ -8,8 +8,8 @@
 # gtypes=("barabasi/2-6/" "barabasi/2-7/" "barabasi/2-8/" "barabasi/2-9/"
 # 	"barabasi/2-10/" "barabasi/2-11/" "barabasi/2-12/" "barabasi/2-13/"
 # 	"barabasi/2-14/")
-gtypes=("barabasi-64")
-# gtypes=("grid-64")
+# gtypes=("barabasi-64")
+gtypes=("grid-64")
 # gtypes=("grid-64")
 # methods=(mst tbfs no-order greedy)
 methods=(mst tbfs no-order)

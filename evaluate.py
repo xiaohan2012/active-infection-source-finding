@@ -7,7 +7,6 @@ from tqdm import tqdm
 from utils import edges2graph
 from infer_time import fill_missing_time
 
-from gt_utils import edges_to_directed_tree
 from scipy.stats import kendalltau
 from feasibility import is_arborescence
 
