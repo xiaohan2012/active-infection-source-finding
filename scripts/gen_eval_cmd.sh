@@ -3,9 +3,9 @@
 # gtypes=(p2p-gnutella08 arxiv-hep-th enron-email dblp-collab)
 # gtypes=(p2p-gnutella08 arxiv-hep-th enron-email)
 # gtypes=(arxiv-hep-th enron-email)
-gtypes=(p2p-gnutella08)
+# gtypes=(p2p-gnutella08)
 # gtypes=(pokec)
-# gtypes=(dblp-collab slashdot twitter gplus pokec)
+gtypes=(dblp-collab slashdot twitter gplus pokec)
 # gtypes=("barabasi-64")
 # methods=(tbfs mst no-order)
 methods=(tbfs mst no-order)
@@ -21,6 +21,8 @@ if [ "${first}" = "barabasi-64" ]; then
 else
     if [ "${first}" = "dblp-collab" ]; then
 	qs=(0.1)
+	methods=(tbfs)
+	models=("si")
     else
 	qs=(0.005 0.01 0.015 0.02 0.025 0.03 0.035 0.04 0.045 0.05 0.055 0.06 0.065 0.07 0.075 0.08 0.085 0.09 0.095 0.1)
     fi
