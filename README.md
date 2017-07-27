@@ -1,5 +1,16 @@
 # active infection source finding
 
+# scripts for ordered steiner tree
+
+- `/home/cloud-user/documents/order-steiner-tree/new_result.tex` (result document)
+  - [url](http://193.166.24.212/steiner-new-result.pdf)
+- `scripts/gen_paper_experiment_cmds.sh` (needs to be edited)
+- `scripts/gen_eval_cmds.sh` (needs to be edited)
+
+done:
+
+- (`q` varies): P2P, axiv-hep
+
 # Important scripts
 
 - `query_count_vs_graph_size.py`
