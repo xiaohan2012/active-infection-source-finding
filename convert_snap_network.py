@@ -1,8 +1,9 @@
 import networkx as nx
 from tqdm import tqdm
 
-for dataset in tqdm(('p2p-gnutella08', 'arxiv-hep-th',
-                     'enron-email', 'dblp-collab')):
+# for dataset in tqdm(('p2p-gnutella08', 'arxiv-hep-th',
+#                      'enron-email', 'dblp-collab')):
+for dataset in tqdm(('facebook', 'email-eu', 'grqc')):
     with open('data/{}/network.txt'.format(dataset)) as f:
         g = nx.Graph()
         for l in f:
