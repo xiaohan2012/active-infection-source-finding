@@ -1,11 +1,20 @@
 # active infection source finding
 
+# pre-processing
+
+snap -> gml -> gt:
+
+1. `convert_snap_network.py`: to gml
+2. `convert_graphml_to_gt.py`: to gt
+
 # scripts for ordered steiner tree
 
 - `/home/cloud-user/documents/order-steiner-tree/new_result.tex` (result document)
   - [url](http://193.166.24.212/steiner-new-result.pdf)
 - `scripts/gen_paper_experiment_cmds.sh` (needs to be edited)
 - `scripts/gen_eval_cmds.sh` (needs to be edited)
+- `paper_experiment_plot.ipynb`: to plot
+- `crop.sh`: to crop figures
 
 done:
 
