@@ -58,13 +58,13 @@ class MyVisitor(BFSVisitor):
 
     # @profile
     def black_target(self, e):
-        s, t = e.source(), e.target()
-        s, t = int(s), int(t)
+        t = int(e.target())
         if self.pred[t] == -1:
+            s = int(e.source())
             self.pred[t] = s
             self.dist[t] = self.dist[s] + 1
 
-    # @profile            
+    # @profile
     def tree_edge(self, e):
         s, t = e.source(), e.target()
         s, t = int(s), int(t)
