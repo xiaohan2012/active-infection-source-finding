@@ -1,3 +1,6 @@
+"""
+find minimum steiner tree (undirected)
+"""
 import numpy as np
 from graph_tool import Graph, GraphView
 from graph_tool.search import pbfs_search

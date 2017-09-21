@@ -56,27 +56,35 @@ class MyVisitor(BFSVisitor):
         self.pred = pred
         self.dist = dist
 
+    # @profile
     def black_target(self, e):
-        s, t = int(e.source()), int(e.target())
+        s, t = e.source(), e.target()
+        s, t = int(s), int(t)
         if self.pred[t] == -1:
             self.pred[t] = s
             self.dist[t] = self.dist[s] + 1
-    
+
+    # @profile            
     def tree_edge(self, e):
-        s, t = int(e.source()), int(e.target())
+        s, t = e.source(), e.target()
+        s, t = int(s), int(t)
         self.pred[t] = s
         self.dist[t] = self.dist[s] + 1
 
 
 def init_visitor(g, root):
-    dist = np.ones(g.num_vertices()) * -1
-    dist[root] = 0
-    pred = np.ones(g.num_vertices(), dtype=int) * -1
+    # dist = np.ones(g.num_vertices()) * -1
+    # pred = np.ones(g.num_vertices(), dtype=int) * -1
+    
+    dist = {i: -1.0 for i in range(g.num_vertices())}
+    dist[root] = 0.0
+
+    pred = {i: -1 for i in range(g.num_vertices())}
     vis = MyVisitor(pred, dist)
     return vis
 
 
-# @profile
+
 def weighted_sample_with_replacement(pool, weights, N):
     assert len(pool) == len(weights)
     np.testing.assert_almost_equal(np.sum(weights), 1)
@@ -218,7 +226,7 @@ def build_minimum_tree(g, root, terminals, edges, directed=True):
     return filter_nodes_by_edges(t, minimum_edges)
 
 
-# @profile
+
 def to_directed(g, t, root):
     new_t = Graph(directed=True)
     all_edges = set()

@@ -3,8 +3,8 @@
 # -g p2p-gnutella08 --param "" \
 # -g pokec --param "" \
 kernprof -l  paper_experiment.py \
-  -g grid --param '2-6' \
-  -m tbfs  \
+  -g arxiv-hep-th \
+  -m mst  \
   -l si \
   -p 0.1 \
   -q 0.1 \

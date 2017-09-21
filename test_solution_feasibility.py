@@ -62,20 +62,6 @@ def test_mst(cascades_on_tree):
         assert is_feasible(tree, root, obs_nodes, infection_times)
 
 
-def test_mst_truncated(cascades_on_tree):
-    for g, infection_times, source, obs_nodes, true_tree, model, q, i in cascades_on_tree:
-        print(model, q, i)
-        root = earliest_obs_node(obs_nodes, infection_times)
-        tree = steiner_tree_mst(
-            g, root, infection_times, source, obs_nodes,
-            closure_builder=build_truncated_closure,
-            k=1,
-            debug=False,
-            verbose=False,
-        )
-        assert is_feasible(tree, root, obs_nodes, infection_times)
-
-
 def test_temporal_bfs(cascades_on_tree):
     for g, infection_times, source, obs_nodes, true_tree, model, q, i in cascades_on_tree:
         print(model, q, i)

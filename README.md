@@ -7,6 +7,10 @@ snap -> gml -> gt:
 1. `convert_snap_network.py`: to gml
 2. `convert_graphml_to_gt.py`: to gt
 
+# debugging/profiling
+
+`scripts/test_paper_experiment.sh`
+
 # scripts for ordered steiner tree
 
 - `/home/cloud-user/documents/order-steiner-tree/new_result.tex` (result document)

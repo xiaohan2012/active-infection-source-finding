@@ -1,8 +1,13 @@
+"""finding minimum steiner arborescence
+respecting time order
+"""
+
 import networkx as nx
 import numpy as np
 from tqdm import tqdm
 from graph_tool.all import Graph
 from graph_tool.search import cpbfs_search, bfs_iterator
+from graph_tool.topology import shortest_distance
 from utils import gt2nx
 from utils import (extract_edges_from_pred,
                    extract_tree,
@@ -32,13 +37,13 @@ def build_closure(g, cand_source, terminals, infection_times, k=-1,
 
     # from cand_source to terminals
     vis = init_visitor(g, cand_source)
-
     cpbfs_search(g, source=cand_source, visitor=vis, terminals=terminals,
                  forbidden_nodes=terminals,
                  count_threshold=k)
     r2pred[cand_source] = vis.pred
     for u, v, c in get_edges(vis.dist, cand_source, terminals):
         edges[(u, v)] = c
+
     if debug:
         print('cand_source: {}'.format(cand_source))
         print('#terminals: {}'.format(len(terminals)))
@@ -52,7 +57,6 @@ def build_closure(g, cand_source, terminals, infection_times, k=-1,
 
     # from terminal to other terminals
     for root in terminals_iter:
-        vis = init_visitor(g, root)
 
         if strictly_smaller:
             late_terminals = [t for t in terminals
@@ -66,6 +70,7 @@ def build_closure(g, cand_source, terminals, infection_times, k=-1,
         if debug:
             print('root: {}'.format(root))
             print('late_terminals: {}'.format(late_terminals))
+        vis = init_visitor(g, root)
         cpbfs_search(g, source=root, visitor=vis, terminals=list(late_terminals),
                      forbidden_nodes=list(set(terminals) - set(late_terminals)),
                      count_threshold=k)
@@ -166,7 +171,9 @@ def steiner_tree_mst(g, root, infection_times, source, terminals,
                      forbidden_nodes=late_nodes,
                      visitor=vis,
                      count_threshold=1)
-        reachable_tree_nodes = set(np.nonzero(vis.dist > 0)[0]).intersection(tree_nodes)
+        # dist, pred = shortest_distance(g, source=u, pred_map=True)
+        node_set = {v for v, d in vis.dist.items() if d > 0}
+        reachable_tree_nodes = node_set.intersection(tree_nodes)
         ancestor = min(reachable_tree_nodes, key=vis.dist.__getitem__)
 
         edges = extract_edges_from_pred(g, u, ancestor, vis.pred)
