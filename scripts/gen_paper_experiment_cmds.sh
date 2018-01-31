@@ -4,7 +4,7 @@
 # gtypes=(p2p-gnutella08 arxiv-hep-th enron-email)
 # gtypes=(p2p-gnutella08)
 # gtypes=(arxiv-hep-th)
-gtypes=(enron-email)
+gtypes=(facebook email-eu grqc)
 # gtypes=(dblp-collab slashdot twitter gplus)
 # gtypes=(arxiv-hep-th enron-email)
 # gtypes=("barabasi/2-6/" "barabasi/2-7/" "barabasi/2-8/" "barabasi/2-9/"
